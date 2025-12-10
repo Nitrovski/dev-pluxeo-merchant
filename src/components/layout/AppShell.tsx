@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </NavLink>
           </nav>
 
-          <Button asChild variant="outline" size="sm">
+          <Button variant="outline" size="sm">
             <Link to="/account">Muj úcet</Link>
           </Button>
         </div>
