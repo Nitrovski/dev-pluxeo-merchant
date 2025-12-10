@@ -52,8 +52,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Pokud není prihlášen ? zobrazíme login button */}
             <SignedOut>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/sign-in">Prihlásit</Link>
+               <Button variant="outline" size="sm">
+                <Link to="/sign-in">Login</Link>
               </Button>
             </SignedOut>
 
