@@ -622,24 +622,35 @@ function TemplatePreview({ values }: { values: TemplateFormValues }) {
         )}
 
         <div className="mb-3 mt-3">
-          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-100/80">
-            Razítka do odmeny
-          </p>
-          <div className="flex gap-1">
-            {Array.from({
-              length: Math.min(values.freeStampsToReward || 10, 12),
-            }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-4 flex-1 rounded-full border border-white/30 ${
-                  themeVariant === "stamps"
-                    ? "bg-white/10"
-                    : "bg-black/15"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
+  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-100/80">
+    Razítka do odmeny
+  </p>
+  <div className="flex gap-1">
+    {(() => {
+      // ?? bezpecný prevod na císlo
+      const raw = values.freeStampsToReward;
+      const parsed =
+        typeof raw === "number" ? raw : Number(raw ?? 10);
+
+      const safeCount =
+        Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+
+      const length = Math.min(safeCount, 12);
+
+      return Array.from({ length }).map((_, i) => (
+        <div
+          key={i}
+          className={`h-4 flex-1 rounded-full border border-white/30 ${
+            values.themeVariant === "stamps"
+              ? "bg-white/10"
+              : "bg-black/15"
+          }`}
+        />
+      ));
+    })()}
+  </div>
+</div>
+
 
         {values.customMessage && (
           <p className="mt-3 text-[11px] text-slate-100/90">
