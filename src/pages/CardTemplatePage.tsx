@@ -90,9 +90,7 @@ export const templateSchema = z.object({
 
   // input posílá string, Zod to prevede na number
   freeStampsToReward: z.coerce
-    .number({
-      invalid_type_error: "Pocet razítek musí být císlo",
-    })
+    .number()
     .int("Musí být celé císlo")
     .min(1, "Minimálne 1 razítko")
     .max(50, "Maximálne 50 razítek"),
@@ -115,7 +113,7 @@ export const templateSchema = z.object({
 });
 
 // ?? Tohle je duležité – typ formuláre bereme prímo ze Zod schématu
-export type TemplateFormValues = z.input<typeof templateSchema>;
+export type TemplateFormValues = z.infer<typeof templateSchema>;
 
 // --- DEFAULTNÍ HODNOTY MUSÍ SEDET NA TemplateFormValues ---
 
@@ -368,7 +366,12 @@ export function CardTemplatePage() {
                               type="number"
                               min={1}
                               max={50}
-                              {...field}
+                              // ?? explicitne premapujeme FieldValues ? props pro <input>
+          name={field.name}
+          ref={field.ref}
+          onBlur={field.onBlur}
+          onChange={(e) => field.onChange(e.target.value)}
+          value={field.value as number | string | undefined}
                             />
                           </FormControl>
                           <FormMessage />
