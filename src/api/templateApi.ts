@@ -1,15 +1,7 @@
 // src/api/templateApi.ts
-import { templateSchema, type TemplateFormValues } from "../pages/CardTemplatePage"; // nebo odkud to exportuješ
 import { API_BASE_URL } from "@/config";
-
-const CUSTOMER_ID = import.meta.env.VITE_CUSTOMER_ID as string;
-const BASE_URL = API_BASE_URL ?? "";
-
-if (!CUSTOMER_ID) {
-  console.warn(
-    "VITE_CUSTOMER_ID není nastavené – nastav ho v .env (napr. VITE_CUSTOMER_ID=kavarna-123)"
-  );
-}
+import { templateSchema, type TemplateFormValues } from "@/schemas/templateSchema";
+// ^ pokud máš schéma jinde, uprav cestu; duležité je typ TemplateFormValues
 
 function buildHeaders(token?: string) {
   return {
@@ -18,12 +10,26 @@ function buildHeaders(token?: string) {
   };
 }
 
-export async function fetchCardTemplate(customerId: string, token?: string) {
-  const res = await fetch(`${API_BASE_URL}/api/customers/${customerId}/card-content`, {
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-  });
+/**
+ * Nacte obsah/šablonu karty pro daného customerId.
+ */
+export async function fetchCardTemplate(
+  customerId: string,
+  token?: string
+): Promise<TemplateFormValues | null> {
+  if (!customerId) return null;
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/customers/${encodeURIComponent(
+      customerId
+    )}/card-content`,
+    {
+      headers: buildHeaders(token),
+    }
+  );
 
   if (res.status === 404) {
+    // customer nebo cardContent zatím neexistuje – vracíme null, FE použije defaulty
     return null;
   }
 
@@ -42,17 +48,21 @@ export async function fetchCardTemplate(customerId: string, token?: string) {
   return parsed.data;
 }
 
+/**
+ * Uloží šablonu pro daného customerId.
+ */
 export async function saveCardTemplate(
+  customerId: string,
   data: TemplateFormValues,
   token?: string
 ): Promise<TemplateFormValues> {
-  if (!CUSTOMER_ID) {
-    throw new Error("VITE_CUSTOMER_ID is not set");
+  if (!customerId) {
+    throw new Error("customerId is required to save template");
   }
 
   const res = await fetch(
-    `${BASE_URL}/api/customers/${encodeURIComponent(
-      CUSTOMER_ID
+    `${API_BASE_URL}/api/customers/${encodeURIComponent(
+      customerId
     )}/card-content`,
     {
       method: "PATCH",
@@ -70,7 +80,8 @@ export async function saveCardTemplate(
   const parsed = templateSchema.safeParse(json);
   if (!parsed.success) {
     console.error("Saved card template from API has invalid shape:", parsed.error);
-    return data; // radši vrátíme puvodní než spadnout
+    // aspon vrátíme to, co jsme poslali
+    return data;
   }
 
   return parsed.data;

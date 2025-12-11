@@ -171,23 +171,28 @@ export function CardTemplatePage() {
   }, [customerId]);
 
 
-  async function onSubmit(values: TemplateFormValues) {
-    try {
-      setServerError(null);
-      setServerSuccess(null);
+async function onSubmit(values: TemplateFormValues) {
+  try {
+    setServerError(null);
+    setServerSuccess(null);
 
-      const token = await getToken();
-      const saved = await saveCardTemplate(values, token ?? undefined);
-
-      form.reset({ ...values, ...saved });
-      setServerSuccess("Šablona byla úspešne uložena.");
-    } catch (err: any) {
-      console.error("Chyba pri ukládání šablony:", err);
-      setServerError(
-        err?.message ?? "Neco se pokazilo pri ukládání šablony."
-      );
+    if (!customerId) {
+      setServerError("Chybí customerId – zkuste obnovit stránku nebo se znovu prihlásit.");
+      return;
     }
+
+    const token = await getToken();
+    const saved = await saveCardTemplate(customerId as string, values, token ?? undefined);
+
+    form.reset({ ...values, ...saved });
+    setServerSuccess("Šablona byla úspešne uložena.");
+  } catch (err: any) {
+    console.error("Chyba pri ukládání šablony:", err);
+    setServerError(
+      err?.message ?? "Neco se pokazilo pri ukládání šablony."
+    );
   }
+}
 
   const previewValues = form.watch();
 
