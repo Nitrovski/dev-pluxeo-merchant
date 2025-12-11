@@ -115,7 +115,7 @@ export const templateSchema = z.object({
 });
 
 // ?? Tohle je duležité – typ formuláre bereme prímo ze Zod schématu
-export type TemplateFormValues = z.infer<typeof templateSchema>;
+export type TemplateFormValues = z.input<typeof templateSchema>;
 
 // --- DEFAULTNÍ HODNOTY MUSÍ SEDET NA TemplateFormValues ---
 
