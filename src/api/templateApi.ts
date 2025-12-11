@@ -18,19 +18,10 @@ function buildHeaders(token?: string) {
   };
 }
 
-export async function fetchCardTemplate(
-  token?: string
-): Promise<TemplateFormValues | null> {
-  if (!CUSTOMER_ID) return null;
-
-  const res = await fetch(
-    `${BASE_URL}/api/customers/${encodeURIComponent(
-      CUSTOMER_ID
-    )}/card-content`,
-    {
-      headers: buildHeaders(token),
-    }
-  );
+export async function fetchCardTemplate(customerId: string, token?: string) {
+  const res = await fetch(`${API_BASE_URL}/api/customers/${customerId}/card-content`, {
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+  });
 
   if (res.status === 404) {
     return null;

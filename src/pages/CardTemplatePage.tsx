@@ -133,34 +133,39 @@ export function CardTemplatePage() {
     mode: "onBlur",
   });
 
+   const customerId = useCustomer();
+   
   // Nactení existující šablony z backendu pres templateApi
   useEffect(() => {
     async function loadTemplate() {
+      if (!customerId) return;
+
       try {
         setLoading(true);
         setServerError(null);
-        setServerSuccess(null);
 
         const token = await getToken();
-        const data = await fetchCardTemplate(token ?? undefined);
+
+        const data = await fetchCardTemplate(customerId, token);
 
         if (data) {
           form.reset({ ...DEFAULT_VALUES, ...data });
         } else {
           form.reset(DEFAULT_VALUES);
         }
+
       } catch (err: any) {
         console.error("Chyba pri nacítání šablony:", err);
-        setServerError(
-          err?.message ?? "Neco se pokazilo pri nacítání šablony."
-        );
+        setServerError(err?.message || "Nelze nacíst šablonu.");
       } finally {
         setLoading(false);
       }
     }
 
     loadTemplate();
-  }, [form, getToken]);
+
+  }, [customerId]);
+
 
   async function onSubmit(values: TemplateFormValues) {
     try {
