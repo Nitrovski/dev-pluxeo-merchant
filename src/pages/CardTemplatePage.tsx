@@ -29,6 +29,9 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
+
+// (Label tu reálne nepoužíváš, ale nechávám import, at ti to nerozbije jiný kód)
+// eslint prípadne muže nadávat, pak ho klidne smaž
 import { Label } from "@/components/ui/label";
 
 const TEMPLATE_VARIANTS = [
@@ -49,7 +52,9 @@ const TEMPLATE_VARIANTS = [
   },
 ] as const;
 
-const templateSchema = z.object({
+// --- ZOD SCHÉMA ---
+
+export const templateSchema = z.object({
   // interní název, klidne prázdný nebo undefined
   programName: z
     .string()
@@ -85,7 +90,9 @@ const templateSchema = z.object({
 
   // input posílá string, Zod to prevede na number
   freeStampsToReward: z.coerce
-    .number()
+    .number({
+      invalid_type_error: "Pocet razítek musí být císlo",
+    })
     .int("Musí být celé císlo")
     .min(1, "Minimálne 1 razítko")
     .max(50, "Maximálne 50 razítek"),
@@ -107,8 +114,10 @@ const templateSchema = z.object({
     .optional(),
 });
 
+// ?? Tohle je duležité – typ formuláre bereme prímo ze Zod schématu
+export type TemplateFormValues = z.infer<typeof templateSchema>;
 
-type TemplateFormValues = z.infer<typeof templateSchema>;
+// --- DEFAULTNÍ HODNOTY MUSÍ SEDET NA TemplateFormValues ---
 
 const DEFAULT_VALUES: TemplateFormValues = {
   programName: "",
@@ -163,6 +172,8 @@ export function CardTemplatePage() {
 
         const data = await res.json();
 
+        // Zajistíme, že freeStampsToReward a themeVariant jsou validní,
+        // ale typove to držíme jako TemplateFormValues
         const merged: TemplateFormValues = {
           ...DEFAULT_VALUES,
           ...data,
@@ -532,7 +543,11 @@ export function CardTemplatePage() {
                     </p>
                   )}
 
-                  <Button type="submit" size="sm" disabled={form.formState.isSubmitting}>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={form.formState.isSubmitting}
+                  >
                     {form.formState.isSubmitting ? "Ukládám…" : "Uložit šablonu"}
                   </Button>
                 </form>
