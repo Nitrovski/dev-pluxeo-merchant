@@ -32,6 +32,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               Moje karty
             </NavLink>
+            
+             <NavLink
+              to="/card-template"
+              className={({ isActive }) =>
+                isActive ? "text-slate-50" : "text-slate-400 hover:text-slate-100"
+              }
+            >
+              Šablona karty
+            </NavLink>
+            
           </nav>
 
           {/* User menu (logout, manage account) */}

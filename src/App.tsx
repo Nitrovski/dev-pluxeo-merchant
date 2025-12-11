@@ -4,6 +4,9 @@ import { SignInPage } from "@/pages/SignInPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { CardsPage } from "@/pages/CardsPage";
 
+// ?? Pridejme nový import:
+import { CardTemplatePage } from "@/pages/CardTemplatePage";
+
 export default function App() {
   return (
     <Routes>
@@ -13,6 +16,11 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/cards" element={<CardsPage />} />
+
+        {/* ?? Nová route – Šablona vernostní karty */}
+        <Route path="/card-template" element={<CardTemplatePage />} />
+
+        {/* default redirect */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Route>
 
