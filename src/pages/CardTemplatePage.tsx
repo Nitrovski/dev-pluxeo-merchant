@@ -147,7 +147,7 @@ export function CardTemplatePage() {
 
         const token = await getToken();
 
-        const data = await fetchCardTemplate(customerId, token);
+        const data = await fetchCardTemplate(customerId as string, token ?? undefined);
 
         if (data) {
           form.reset({ ...DEFAULT_VALUES, ...data });
