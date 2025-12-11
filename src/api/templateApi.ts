@@ -1,7 +1,11 @@
 // src/api/templateApi.ts
 import { API_BASE_URL } from "@/config";
-import { templateSchema, type TemplateFormValues } from "@/schemas/templateSchema";
-// ^ pokud máš schéma jinde, uprav cestu; duležité je typ TemplateFormValues
+import {
+  templateSchema,
+  type TemplateFormValues,
+} from "../pages/CardTemplatePage"; // používáme stejné místo jako drív
+
+const BASE_URL = API_BASE_URL ?? "";
 
 function buildHeaders(token?: string) {
   return {
@@ -17,31 +21,41 @@ export async function fetchCardTemplate(
   customerId: string,
   token?: string
 ): Promise<TemplateFormValues | null> {
-  if (!customerId) return null;
+  if (!customerId) {
+    return null;
+  }
 
   const res = await fetch(
-    `${API_BASE_URL}/api/customers/${encodeURIComponent(
+    `${BASE_URL}/api/customers/${encodeURIComponent(
       customerId
     )}/card-content`,
     {
+      method: "GET",
       headers: buildHeaders(token),
     }
   );
 
   if (res.status === 404) {
-    // customer nebo cardContent zatím neexistuje – vracíme null, FE použije defaulty
+    // customer nebo cardContent zatím neexistuje – FE použije defaulty
     return null;
   }
 
   if (!res.ok) {
-    console.error("Failed to fetch card template", res.status, await res.text());
+    console.error(
+      "Failed to fetch card template",
+      res.status,
+      await res.text()
+    );
     throw new Error(`Failed to fetch card template: ${res.status}`);
   }
 
   const json = await res.json();
   const parsed = templateSchema.safeParse(json);
   if (!parsed.success) {
-    console.error("Card template from API has invalid shape:", parsed.error);
+    console.error(
+      "Card template from API has invalid shape:",
+      parsed.error
+    );
     return null;
   }
 
@@ -61,28 +75,8 @@ export async function saveCardTemplate(
   }
 
   const res = await fetch(
-    `${API_BASE_URL}/api/customers/${encodeURIComponent(
+    `${BASE_URL}/api/customers/${encodeURIComponent(
       customerId
     )}/card-content`,
     {
       method: "PATCH",
-      headers: buildHeaders(token),
-      body: JSON.stringify(data),
-    }
-  );
-
-  if (!res.ok) {
-    console.error("Failed to save card template", res.status, await res.text());
-    throw new Error(`Failed to save card template: ${res.status}`);
-  }
-
-  const json = await res.json();
-  const parsed = templateSchema.safeParse(json);
-  if (!parsed.success) {
-    console.error("Saved card template from API has invalid shape:", parsed.error);
-    // aspon vrátíme to, co jsme poslali
-    return data;
-  }
-
-  return parsed.data;
-}
