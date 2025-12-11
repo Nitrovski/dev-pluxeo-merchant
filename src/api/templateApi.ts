@@ -94,16 +94,15 @@ export async function saveCardTemplate(
     throw new Error(`Failed to save card template: ${res.status}`);
   }
 
-  const json = await res.json();
-  const parsed = templateSchema.safeParse(json);
-  if (!parsed.success) {
-    console.error(
-      "Saved card template from API has invalid shape:",
-      parsed.error
-    );
-    // když backend vrátí neco divného, aspon držíme to, co jsme poslali
-    return data;
+  // Odpoved z backendu zatím nerešíme do detailu – jen ji prípadne logneme
+  try {
+    const json = await res.json();
+    // Pokud bys chtel do budoucna rešit cardContent, mužeš:
+    // console.log("saveCardTemplate response:", json);
+  } catch {
+    // žádný JSON, nevadí
   }
 
-  return parsed.data;
+  // ?? Vrátíme to, co jsme poslali – to má validní tvar podle Zodu
+  return data;
 }
