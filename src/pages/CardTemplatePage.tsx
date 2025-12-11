@@ -50,16 +50,19 @@ const TEMPLATE_VARIANTS = [
 ] as const;
 
 const templateSchema = z.object({
+  // interní název, klidne prázdný nebo undefined
   programName: z
     .string()
     .max(100, "Maximálne 100 znaku")
     .optional(),
 
+  // MUSÍ být vyplnené
   headline: z
     .string()
     .min(1, "Nadpis je povinný")
     .max(120, "Maximálne 120 znaku"),
 
+  // nepovinné, muže být prázdné nebo undefined
   subheadline: z
     .string()
     .max(160, "Maximálne 160 znaku")
@@ -75,17 +78,19 @@ const templateSchema = z.object({
     .max(120, "Maximálne 120 znaku")
     .optional(),
 
-  // muže být prázdné nebo validní URL
+  // muže být: "" (prázdný) nebo validní URL
   websiteUrl: z
     .union([z.string().url("Musí být platná URL"), z.literal("")])
     .optional(),
 
+  // input posílá string, Zod to prevede na number
   freeStampsToReward: z.coerce
     .number()
     .int("Musí být celé císlo")
     .min(1, "Minimálne 1 razítko")
     .max(50, "Maximálne 50 razítek"),
 
+  // výber ze trí možností
   themeVariant: z.enum(["classic", "stamps", "minimal"]),
 
   primaryColor: z
@@ -96,6 +101,7 @@ const templateSchema = z.object({
     .string()
     .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve formátu #RRGGBB"),
 
+  // muže být "" nebo validní URL
   logoUrl: z
     .union([z.string().url("Musí být platná URL"), z.literal("")])
     .optional(),
