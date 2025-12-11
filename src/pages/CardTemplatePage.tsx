@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@clerk/clerk-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { fetchCardTemplate, saveCardTemplate } from "@/api/templateApi";
 
 import {
   Card,
