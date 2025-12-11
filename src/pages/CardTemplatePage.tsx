@@ -53,56 +53,54 @@ const templateSchema = z.object({
   programName: z
     .string()
     .max(100, "Maximálne 100 znaku")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
+
   headline: z
     .string()
     .min(1, "Nadpis je povinný")
     .max(120, "Maximálne 120 znaku"),
+
   subheadline: z
     .string()
     .max(160, "Maximálne 160 znaku")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
+
   customMessage: z
     .string()
     .max(500, "Maximálne 500 znaku")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
+
   openingHours: z
     .string()
     .max(120, "Maximálne 120 znaku")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
+
+  // muže být prázdné nebo validní URL
   websiteUrl: z
-    .string()
-    .url("Musí být platná URL")
-    .optional()
-    .or(z.literal("")),
-  freeStampsToReward: z
-    .coerce
-    .number({
-      required_error: "Zadej pocet razítek",
-      invalid_type_error: "Musí být císlo",
-    })
+    .union([z.string().url("Musí být platná URL"), z.literal("")])
+    .optional(),
+
+  freeStampsToReward: z.coerce
+    .number()
     .int("Musí být celé císlo")
     .min(1, "Minimálne 1 razítko")
     .max(50, "Maximálne 50 razítek"),
-  themeVariant: z.enum(["classic", "stamps", "minimal"], {
-    required_error: "Vyber typ šablony",
-  }),
+
+  themeVariant: z.enum(["classic", "stamps", "minimal"]),
+
   primaryColor: z
     .string()
     .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve formátu #RRGGBB"),
+
   secondaryColor: z
     .string()
     .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve formátu #RRGGBB"),
+
   logoUrl: z
-    .string()
-    .url("Musí být platná URL")
-    .optional()
-    .or(z.literal("")),
+    .union([z.string().url("Musí být platná URL"), z.literal("")])
+    .optional(),
 });
+
 
 type TemplateFormValues = z.infer<typeof templateSchema>;
 
