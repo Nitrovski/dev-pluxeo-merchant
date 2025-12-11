@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/clerk-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-
+import { useAuth } from "@clerk/clerk-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { API_BASE_URL } from "@/config";
+import { fetchCardTemplate, saveCardTemplate } from "@/api/templateApi";
 
 import {
   Card,
@@ -25,14 +24,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
-
-// (Label tu reálne nepoužíváš, ale nechávám import, at ti to nerozbije jiný kód)
-// eslint prípadne muže nadávat, pak ho klidne smaž
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+
+import {
+  fetchCardTemplate,
+  saveCardTemplate,
+} from "@/api/templateApi";
 
 const TEMPLATE_VARIANTS = [
   {
@@ -55,19 +53,16 @@ const TEMPLATE_VARIANTS = [
 // --- ZOD SCHÉMA ---
 
 export const templateSchema = z.object({
-  // interní název, klidne prázdný nebo undefined
   programName: z
     .string()
     .max(100, "Maximálne 100 znaku")
     .optional(),
 
-  // MUSÍ být vyplnené
   headline: z
     .string()
     .min(1, "Nadpis je povinný")
     .max(120, "Maximálne 120 znaku"),
 
-  // nepovinné, muže být prázdné nebo undefined
   subheadline: z
     .string()
     .max(160, "Maximálne 160 znaku")
@@ -83,19 +78,16 @@ export const templateSchema = z.object({
     .max(120, "Maximálne 120 znaku")
     .optional(),
 
-  // muže být: "" (prázdný) nebo validní URL
   websiteUrl: z
     .union([z.string().url("Musí být platná URL"), z.literal("")])
     .optional(),
 
-  // input posílá string, Zod to prevede na number
   freeStampsToReward: z.coerce
     .number()
     .int("Musí být celé císlo")
     .min(1, "Minimálne 1 razítko")
     .max(50, "Maximálne 50 razítek"),
 
-  // výber ze trí možností
   themeVariant: z.enum(["classic", "stamps", "minimal"]),
 
   primaryColor: z
@@ -106,16 +98,15 @@ export const templateSchema = z.object({
     .string()
     .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve formátu #RRGGBB"),
 
-  // muže být "" nebo validní URL
   logoUrl: z
     .union([z.string().url("Musí být platná URL"), z.literal("")])
     .optional(),
 });
 
-// ?? Tohle je duležité – typ formuláre bereme prímo ze Zod schématu
+// typ formuláre
 export type TemplateFormValues = z.input<typeof templateSchema>;
 
-// --- DEFAULTNÍ HODNOTY MUSÍ SEDET NA TemplateFormValues ---
+// --- DEFAULTNÍ HODNOTY ---
 
 const DEFAULT_VALUES: TemplateFormValues = {
   programName: "",
@@ -143,7 +134,7 @@ export function CardTemplatePage() {
     mode: "onBlur",
   });
 
-  // Nactení existující šablony z backendu
+  // Nactení existující šablony z backendu pres templateApi
   useEffect(() => {
     async function loadTemplate() {
       try {
@@ -151,42 +142,14 @@ export function CardTemplatePage() {
         setServerError(null);
         setServerSuccess(null);
 
-        if (!API_BASE_URL) {
-          throw new Error("Chybí konfigurace API_BASE_URL");
-        }
-
         const token = await getToken();
+        const data = await fetchCardTemplate(token ?? undefined);
 
-        const res = await fetch(`${API_BASE_URL}/api/card-template`, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error(`API error: ${res.status}`);
+        if (data) {
+          form.reset({ ...DEFAULT_VALUES, ...data });
+        } else {
+          form.reset(DEFAULT_VALUES);
         }
-
-        const data = await res.json();
-
-        // Zajistíme, že freeStampsToReward a themeVariant jsou validní,
-        // ale typove to držíme jako TemplateFormValues
-        const merged: TemplateFormValues = {
-          ...DEFAULT_VALUES,
-          ...data,
-          freeStampsToReward:
-            typeof data.freeStampsToReward === "number"
-              ? data.freeStampsToReward
-              : DEFAULT_VALUES.freeStampsToReward,
-          themeVariant: TEMPLATE_VARIANTS.some(
-            (v) => v.key === data.themeVariant
-          )
-            ? data.themeVariant
-            : DEFAULT_VALUES.themeVariant,
-        };
-
-        form.reset(merged);
       } catch (err: any) {
         console.error("Chyba pri nacítání šablony:", err);
         setServerError(
@@ -198,40 +161,17 @@ export function CardTemplatePage() {
     }
 
     loadTemplate();
-  }, [getToken, form]);
+  }, [form, getToken]);
 
   async function onSubmit(values: TemplateFormValues) {
     try {
       setServerError(null);
       setServerSuccess(null);
 
-      if (!API_BASE_URL) {
-        throw new Error("Chybí konfigurace API_BASE_URL");
-      }
-
       const token = await getToken();
+      const saved = await saveCardTemplate(values, token ?? undefined);
 
-      const res = await fetch(`${API_BASE_URL}/api/card-template`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(values),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`API error: ${res.status} – ${text}`);
-      }
-
-      const data = await res.json();
-
-      form.reset({
-        ...values,
-        ...data,
-      });
-
+      form.reset({ ...values, ...saved });
       setServerSuccess("Šablona byla úspešne uložena.");
     } catch (err: any) {
       console.error("Chyba pri ukládání šablony:", err);
@@ -366,12 +306,14 @@ export function CardTemplatePage() {
                               type="number"
                               min={1}
                               max={50}
-                              // ?? explicitne premapujeme FieldValues ? props pro <input>
-          name={field.name}
-          ref={field.ref}
-          onBlur={field.onBlur}
-          onChange={(e) => field.onChange(e.target.value)}
-          value={field.value as number | string | undefined}
+                              // explicitne premapujeme FieldValues ? props pro <input>
+                              name={field.name}
+                              ref={field.ref}
+                              onBlur={field.onBlur}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              value={
+                                field.value as number | string | undefined
+                              }
                             />
                           </FormControl>
                           <FormMessage />
@@ -522,10 +464,7 @@ export function CardTemplatePage() {
                           <FormItem>
                             <FormLabel>Logo URL (zatím jen URL)</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="https://…"
-                                {...field}
-                              />
+                              <Input placeholder="https://…" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -563,7 +502,8 @@ export function CardTemplatePage() {
             <CardHeader>
               <CardTitle>Náhled karty</CardTitle>
               <CardDescription>
-                Približný vzhled, jak se karta zobrazí zákazníkum (v aplikaci / Wallet).
+                Približný vzhled, jak se karta zobrazí zákazníkum (v aplikaci /
+                Wallet).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -622,35 +562,33 @@ function TemplatePreview({ values }: { values: TemplateFormValues }) {
         )}
 
         <div className="mb-3 mt-3">
-  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-100/80">
-    Razítka do odmeny
-  </p>
-  <div className="flex gap-1">
-    {(() => {
-      // ?? bezpecný prevod na císlo
-      const raw = values.freeStampsToReward;
-      const parsed =
-        typeof raw === "number" ? raw : Number(raw ?? 10);
+          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-100/80">
+            Razítka do odmeny
+          </p>
+          <div className="flex gap-1">
+            {(() => {
+              const raw = values.freeStampsToReward;
+              const parsed =
+                typeof raw === "number" ? raw : Number(raw ?? 10);
 
-      const safeCount =
-        Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+              const safeCount =
+                Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
 
-      const length = Math.min(safeCount, 12);
+              const length = Math.min(safeCount, 12);
 
-      return Array.from({ length }).map((_, i) => (
-        <div
-          key={i}
-          className={`h-4 flex-1 rounded-full border border-white/30 ${
-            values.themeVariant === "stamps"
-              ? "bg-white/10"
-              : "bg-black/15"
-          }`}
-        />
-      ));
-    })()}
-  </div>
-</div>
-
+              return Array.from({ length }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-4 flex-1 rounded-full border border-white/30 ${
+                    values.themeVariant === "stamps"
+                      ? "bg-white/10"
+                      : "bg-black/15"
+                  }`}
+                />
+              ));
+            })()}
+          </div>
+        </div>
 
         {values.customMessage && (
           <p className="mt-3 text-[11px] text-slate-100/90">
