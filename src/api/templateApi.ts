@@ -80,3 +80,30 @@ export async function saveCardTemplate(
     )}/card-content`,
     {
       method: "PATCH",
+      headers: buildHeaders(token),
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!res.ok) {
+    console.error(
+      "Failed to save card template",
+      res.status,
+      await res.text()
+    );
+    throw new Error(`Failed to save card template: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const parsed = templateSchema.safeParse(json);
+  if (!parsed.success) {
+    console.error(
+      "Saved card template from API has invalid shape:",
+      parsed.error
+    );
+    // když backend vrátí neco divného, aspon držíme to, co jsme poslali
+    return data;
+  }
+
+  return parsed.data;
+}
