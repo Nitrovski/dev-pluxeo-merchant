@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { API_BASE_URL } from "@/config";
@@ -26,40 +29,9 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
-type CardTemplate = {
-  programName: string;
-  headline: string;
-  subheadline: string;
-  customMessage: string;
-  openingHours: string;
-  websiteUrl: string;
-  freeStampsToReward: number;
-  themeVariant: "classic" | "stamps" | "minimal";
-  primaryColor: string;
-  secondaryColor: string;
-  logoUrl: string;
-};
-
-const DEFAULT_TEMPLATE: CardTemplate = {
-  programName: "",
-  headline: "",
-  subheadline: "",
-  customMessage: "",
-  openingHours: "",
-  websiteUrl: "",
-  freeStampsToReward: 10,
-  themeVariant: "classic",
-  primaryColor: "#FF9900",
-  secondaryColor: "#111827",
-  logoUrl: "",
-};
-
-const TEMPLATE_VARIANTS: {
-  key: CardTemplate["themeVariant"];
-  label: string;
-  description: string;
-}[] = [
+const TEMPLATE_VARIANTS = [
   {
     key: "classic",
     label: "Klasická",
@@ -75,24 +47,98 @@ const TEMPLATE_VARIANTS: {
     label: "Minimalistická",
     description: "Hodne cistý, textove orientovaný vzhled.",
   },
-];
+] as const;
+
+const templateSchema = z.object({
+  programName: z
+    .string()
+    .max(100, "Maximálne 100 znaku")
+    .optional()
+    .or(z.literal("")),
+  headline: z
+    .string()
+    .min(1, "Nadpis je povinný")
+    .max(120, "Maximálne 120 znaku"),
+  subheadline: z
+    .string()
+    .max(160, "Maximálne 160 znaku")
+    .optional()
+    .or(z.literal("")),
+  customMessage: z
+    .string()
+    .max(500, "Maximálne 500 znaku")
+    .optional()
+    .or(z.literal("")),
+  openingHours: z
+    .string()
+    .max(120, "Maximálne 120 znaku")
+    .optional()
+    .or(z.literal("")),
+  websiteUrl: z
+    .string()
+    .url("Musí být platná URL")
+    .optional()
+    .or(z.literal("")),
+  freeStampsToReward: z
+    .coerce
+    .number({
+      required_error: "Zadej pocet razítek",
+      invalid_type_error: "Musí být císlo",
+    })
+    .int("Musí být celé císlo")
+    .min(1, "Minimálne 1 razítko")
+    .max(50, "Maximálne 50 razítek"),
+  themeVariant: z.enum(["classic", "stamps", "minimal"], {
+    required_error: "Vyber typ šablony",
+  }),
+  primaryColor: z
+    .string()
+    .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve formátu #RRGGBB"),
+  secondaryColor: z
+    .string()
+    .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve formátu #RRGGBB"),
+  logoUrl: z
+    .string()
+    .url("Musí být platná URL")
+    .optional()
+    .or(z.literal("")),
+});
+
+type TemplateFormValues = z.infer<typeof templateSchema>;
+
+const DEFAULT_VALUES: TemplateFormValues = {
+  programName: "",
+  headline: "Sbírej razítka a získej kávu zdarma",
+  subheadline: "Pluxeo Coffee – tvoje oblíbená kavárna",
+  customMessage: "",
+  openingHours: "",
+  websiteUrl: "",
+  freeStampsToReward: 10,
+  themeVariant: "classic",
+  primaryColor: "#FF9900",
+  secondaryColor: "#111827",
+  logoUrl: "",
+};
 
 export function CardTemplatePage() {
   const { getToken } = useAuth();
-
-  const [template, setTemplate] = useState<CardTemplate>(DEFAULT_TEMPLATE);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverSuccess, setServerSuccess] = useState<string | null>(null);
+
+  const form = useForm<TemplateFormValues>({
+    resolver: zodResolver(templateSchema),
+    defaultValues: DEFAULT_VALUES,
+    mode: "onBlur",
+  });
 
   // Nactení existující šablony z backendu
   useEffect(() => {
     async function loadTemplate() {
       try {
         setLoading(true);
-        setError(null);
-        setSuccess(null);
+        setServerError(null);
+        setServerSuccess(null);
 
         if (!API_BASE_URL) {
           throw new Error("Chybí konfigurace API_BASE_URL");
@@ -113,34 +159,38 @@ export function CardTemplatePage() {
 
         const data = await res.json();
 
-        setTemplate((prev) => ({
-          ...prev,
+        const merged: TemplateFormValues = {
+          ...DEFAULT_VALUES,
           ...data,
           freeStampsToReward:
             typeof data.freeStampsToReward === "number"
               ? data.freeStampsToReward
-              : prev.freeStampsToReward,
-          themeVariant: TEMPLATE_VARIANTS.some(v => v.key === data.themeVariant)
+              : DEFAULT_VALUES.freeStampsToReward,
+          themeVariant: TEMPLATE_VARIANTS.some(
+            (v) => v.key === data.themeVariant
+          )
             ? data.themeVariant
-            : prev.themeVariant,
-        }));
+            : DEFAULT_VALUES.themeVariant,
+        };
+
+        form.reset(merged);
       } catch (err: any) {
         console.error("Chyba pri nacítání šablony:", err);
-        setError(err?.message ?? "Neco se pokazilo pri nacítání šablony.");
+        setServerError(
+          err?.message ?? "Neco se pokazilo pri nacítání šablony."
+        );
       } finally {
         setLoading(false);
       }
     }
 
     loadTemplate();
-  }, [getToken]);
+  }, [getToken, form]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSubmit(values: TemplateFormValues) {
     try {
-      setSaving(true);
-      setError(null);
-      setSuccess(null);
+      setServerError(null);
+      setServerSuccess(null);
 
       if (!API_BASE_URL) {
         throw new Error("Chybí konfigurace API_BASE_URL");
@@ -154,7 +204,7 @@ export function CardTemplatePage() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(template),
+        body: JSON.stringify(values),
       });
 
       if (!res.ok) {
@@ -163,35 +213,30 @@ export function CardTemplatePage() {
       }
 
       const data = await res.json();
-      setTemplate((prev) => ({
-        ...prev,
-        ...data,
-      }));
 
-      setSuccess("Šablona byla uložena.");
+      form.reset({
+        ...values,
+        ...data,
+      });
+
+      setServerSuccess("Šablona byla úspešne uložena.");
     } catch (err: any) {
       console.error("Chyba pri ukládání šablony:", err);
-      setError(err?.message ?? "Neco se pokazilo pri ukládání šablony.");
-    } finally {
-      setSaving(false);
+      setServerError(
+        err?.message ?? "Neco se pokazilo pri ukládání šablony."
+      );
     }
   }
 
-  // Jednoduchý change helper – at si nemusíš psát setTemplate všude
-  function updateField<K extends keyof CardTemplate>(key: K, value: CardTemplate[K]) {
-    setTemplate((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
+  const previewValues = form.watch();
 
   return (
     <AppShell>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Šablona vernostní karty</h1>
         <p className="text-sm text-slate-400">
-          Nastav, jak budou vypadat a fungovat karty pro tvoje zákazníky. Tato šablona
-          se použije pro všechny nové karty i verejné zobrazení.
+          Nastav, jak budou vypadat a fungovat karty pro tvoje zákazníky. Tato
+          šablona se použije pro všechny nové karty i verejné zobrazení.
         </p>
       </div>
 
@@ -204,192 +249,290 @@ export function CardTemplatePage() {
           {/* Formulár vlevo */}
           <Card className="bg-slate-900 border-slate-800">
             <CardHeader>
-              <CardTitle>Nastavení obsahu a vzhledu</CardTitle>
+              <CardTitle>Nastavení obsahu a pravidel</CardTitle>
               <CardDescription>
-                Texty, barvy a typ šablony. Uložení se projeví na všech kartách.
+                Texty, pravidla programu a vzhled karty. Uložení se projeví
+                všude, kde se karta zobrazuje.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-5" onSubmit={handleSubmit}>
-                {/* Základní texty */}
-                <div className="space-y-3">
-                  <div>
-                    <FormLabel>Interní název programu</FormLabel>
-                    <Input
-                      placeholder="napr. Káva zdarma po 10 razítkách"
-                      value={template.programName}
-                      onChange={(e) => updateField("programName", e.target.value)}
+              <Form {...form}>
+                <form
+                  className="space-y-6"
+                  onSubmit={form.handleSubmit(onSubmit)}
+                >
+                  {/* Sekce: Texty */}
+                  <div className="space-y-3">
+                    <h2 className="text-sm font-semibold text-slate-100">
+                      Texty na karte
+                    </h2>
+                    <FormField
+                      control={form.control}
+                      name="programName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Interní název programu</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="napr. Káva zdarma po 10 razítkách"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="headline"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nadpis na karte</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="napr. Sbírej razítka a získej kávu zdarma"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="subheadline"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Podnadpis</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="napr. Pluxeo Coffee – Vodickova"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="customMessage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Text pro zákazníka</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Krátké vysvetlení podmínek, omezení, atd."
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
 
-                  <div>
-                    <FormLabel>Nadpis na karte</FormLabel>
-                    <Input
-                      placeholder="napr. Sbírej razítka a získej kávu zdarma"
-                      value={template.headline}
-                      onChange={(e) => updateField("headline", e.target.value)}
+                  {/* Sekce: Pravidla */}
+                  <div className="space-y-3">
+                    <h2 className="text-sm font-semibold text-slate-100">
+                      Pravidla vernostního programu
+                    </h2>
+
+                    <FormField
+                      control={form.control}
+                      name="freeStampsToReward"
+                      render={({ field }) => (
+                        <FormItem className="max-w-[160px]">
+                          <FormLabel>Pocet razítek na odmenu</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={50}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
 
-                  <div>
-                    <FormLabel>Podnadpis</FormLabel>
-                    <Input
-                      placeholder="napr. Pluxeo Coffee – Vodickova"
-                      value={template.subheadline}
-                      onChange={(e) => updateField("subheadline", e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <FormLabel>Text pro zákazníka</FormLabel>
-                    <Textarea
-                      placeholder="Krátké vysvetlení podmínek, omezení, atd."
-                      value={template.customMessage}
-                      onChange={(e) => updateField("customMessage", e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                {/* Pravidla programu */}
-                <div className="space-y-3">
-                  <div>
-                    <FormLabel>Pocet razítek na odmenu</FormLabel>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={template.freeStampsToReward}
-                      onChange={(e) =>
-                        updateField(
-                          "freeStampsToReward",
-                          Number(e.target.value) || 1
-                        )
-                      }
-                      className="w-32"
-                    />
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <FormLabel>Otevírací doba (volitelné)</FormLabel>
-                      <Input
-                        placeholder="napr. Po–Pá 8:00–18:00"
-                        value={template.openingHours}
-                        onChange={(e) =>
-                          updateField("openingHours", e.target.value)
-                        }
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="openingHours"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Otevírací doba (volitelné)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="napr. Po–Pá 8:00–18:00"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                    <div>
-                      <FormLabel>Web / odkaz (volitelné)</FormLabel>
-                      <Input
-                        placeholder="https://"
-                        value={template.websiteUrl}
-                        onChange={(e) =>
-                          updateField("websiteUrl", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Výber šablony + barvy */}
-                <div className="space-y-3">
-                  <FormLabel>Typ šablony</FormLabel>
-                  <RadioGroup
-                    value={template.themeVariant}
-                    onValueChange={(val) =>
-                      updateField(
-                        "themeVariant",
-                        val as CardTemplate["themeVariant"]
-                      )
-                    }
-                    className="grid gap-3 md:grid-cols-3"
-                  >
-                    {TEMPLATE_VARIANTS.map((variant) => (
-                      <label
-                        key={variant.key}
-                        className="flex cursor-pointer flex-col gap-1 rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-xs hover:border-slate-400"
-                      >
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value={variant.key} />
-                          <span className="font-medium text-slate-50">
-                            {variant.label}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-400">
-                          {variant.description}
-                        </span>
-                      </label>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div>
-                    <FormLabel>Primární barva</FormLabel>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Input
-                        type="color"
-                        className="h-9 w-12 p-1"
-                        value={template.primaryColor}
-                        onChange={(e) =>
-                          updateField("primaryColor", e.target.value)
-                        }
-                      />
-                      <Input
-                        value={template.primaryColor}
-                        onChange={(e) =>
-                          updateField("primaryColor", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <FormLabel>Sekundární barva</FormLabel>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Input
-                        type="color"
-                        className="h-9 w-12 p-1"
-                        value={template.secondaryColor}
-                        onChange={(e) =>
-                          updateField("secondaryColor", e.target.value)
-                        }
-                      />
-                      <Input
-                        value={template.secondaryColor}
-                        onChange={(e) =>
-                          updateField("secondaryColor", e.target.value)
-                        }
+                      <FormField
+                        control={form.control}
+                        name="websiteUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Web / odkaz (volitelné)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://…" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
                   </div>
-                  <div>
-                    <FormLabel>Logo URL (zatím jen URL)</FormLabel>
-                    <Input
-                      placeholder="https://…"
-                      value={template.logoUrl}
-                      onChange={(e) =>
-                        updateField("logoUrl", e.target.value)
-                      }
+
+                  {/* Sekce: Typ šablony */}
+                  <div className="space-y-3">
+                    <h2 className="text-sm font-semibold text-slate-100">
+                      Typ šablony
+                    </h2>
+                    <FormField
+                      control={form.control}
+                      name="themeVariant"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              className="grid gap-3 md:grid-cols-3"
+                            >
+                              {TEMPLATE_VARIANTS.map((variant) => (
+                                <label
+                                  key={variant.key}
+                                  className={`flex cursor-pointer flex-col gap-1 rounded-lg border bg-slate-900/60 p-3 text-xs hover:border-slate-400 ${
+                                    field.value === variant.key
+                                      ? "border-slate-200"
+                                      : "border-slate-700"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <RadioGroupItem value={variant.key} />
+                                    <span className="font-medium text-slate-50">
+                                      {variant.label}
+                                    </span>
+                                  </div>
+                                  <span className="text-[11px] text-slate-400">
+                                    {variant.description}
+                                  </span>
+                                </label>
+                              ))}
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                </div>
 
-                {/* Error / success */}
-                {error && (
-                  <p className="text-sm text-red-400 whitespace-pre-wrap">
-                    {error}
-                  </p>
-                )}
-                {success && (
-                  <p className="text-sm text-emerald-400">{success}</p>
-                )}
+                  {/* Sekce: Branding / barvy / logo */}
+                  <div className="space-y-3">
+                    <h2 className="text-sm font-semibold text-slate-100">
+                      Branding a barvy
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <FormField
+                        control={form.control}
+                        name="primaryColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Primární barva</FormLabel>
+                            <div className="mt-1 flex items-center gap-2">
+                              <FormControl>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    className="h-9 w-12 cursor-pointer rounded-md border border-slate-700 bg-slate-950 p-1"
+                                    value={field.value}
+                                    onChange={(e) =>
+                                      field.onChange(e.target.value)
+                                    }
+                                  />
+                                  <Input {...field} />
+                                </div>
+                              </FormControl>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                <Button type="submit" size="sm" disabled={saving}>
-                  {saving ? "Ukládám…" : "Uložit šablonu"}
-                </Button>
-              </form>
+                      <FormField
+                        control={form.control}
+                        name="secondaryColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sekundární barva</FormLabel>
+                            <div className="mt-1 flex items-center gap-2">
+                              <FormControl>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    className="h-9 w-12 cursor-pointer rounded-md border border-slate-700 bg-slate-950 p-1"
+                                    value={field.value}
+                                    onChange={(e) =>
+                                      field.onChange(e.target.value)
+                                    }
+                                  />
+                                  <Input {...field} />
+                                </div>
+                              </FormControl>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="logoUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Logo URL (zatím jen URL)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="https://…"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Globální hlášky */}
+                  {serverError && (
+                    <p className="text-sm text-red-400 whitespace-pre-wrap">
+                      {serverError}
+                    </p>
+                  )}
+                  {serverSuccess && (
+                    <p className="text-sm text-emerald-400">
+                      {serverSuccess}
+                    </p>
+                  )}
+
+                  <Button type="submit" size="sm" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? "Ukládám…" : "Uložit šablonu"}
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
 
@@ -402,7 +545,7 @@ export function CardTemplatePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <TemplatePreview template={template} />
+              <TemplatePreview values={previewValues} />
             </CardContent>
           </Card>
         </div>
@@ -411,43 +554,35 @@ export function CardTemplatePage() {
   );
 }
 
-type PreviewProps = {
-  template: CardTemplate;
-};
+function TemplatePreview({ values }: { values: TemplateFormValues }) {
+  const { themeVariant, primaryColor, secondaryColor } = values;
 
-function TemplatePreview({ template }: PreviewProps) {
-  const { themeVariant, primaryColor, secondaryColor } = template;
+  const isMinimal = themeVariant === "minimal";
 
-  const bg =
-    themeVariant === "minimal"
-      ? "bg-slate-900"
-      : "bg-gradient-to-br";
-
-  const gradientStyle =
-    themeVariant !== "minimal"
-      ? {
-          backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-        }
-      : {};
+  const style = !isMinimal
+    ? {
+        backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+      }
+    : {};
 
   return (
     <div className="flex justify-center">
       <div
-        className={`w-full max-w-xs rounded-2xl p-4 text-slate-50 shadow-lg ${bg}`}
-        style={gradientStyle}
+        className="w-full max-w-xs rounded-2xl p-4 text-slate-50 shadow-lg bg-slate-900"
+        style={style}
       >
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex flex-col">
             <span className="text-xs uppercase tracking-wide text-slate-200/80">
-              {template.programName || "Vernostní program"}
+              {values.programName || "Vernostní program"}
             </span>
             <span className="text-lg font-semibold">
-              {template.headline || "Sbírej razítka a získej odmenu"}
+              {values.headline || "Sbírej razítka a získej odmenu"}
             </span>
           </div>
-          {template.logoUrl ? (
+          {values.logoUrl ? (
             <img
-              src={template.logoUrl}
+              src={values.logoUrl}
               alt="Logo"
               className="h-10 w-10 rounded-full border border-white/30 object-cover bg-white/10"
             />
@@ -458,20 +593,19 @@ function TemplatePreview({ template }: PreviewProps) {
           )}
         </div>
 
-        {template.subheadline && (
+        {values.subheadline && (
           <p className="mb-2 text-xs text-slate-100/90">
-            {template.subheadline}
+            {values.subheadline}
           </p>
         )}
 
-        {/* "Stamps" rádek – jen vizuální */}
         <div className="mb-3 mt-3">
           <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-100/80">
             Razítka do odmeny
           </p>
           <div className="flex gap-1">
             {Array.from({
-              length: Math.min(template.freeStampsToReward || 10, 12),
+              length: Math.min(values.freeStampsToReward || 10, 12),
             }).map((_, i) => (
               <div
                 key={i}
@@ -485,20 +619,16 @@ function TemplatePreview({ template }: PreviewProps) {
           </div>
         </div>
 
-        {template.customMessage && (
+        {values.customMessage && (
           <p className="mt-3 text-[11px] text-slate-100/90">
-            {template.customMessage}
+            {values.customMessage}
           </p>
         )}
 
-        {(template.openingHours || template.websiteUrl) && (
+        {(values.openingHours || values.websiteUrl) && (
           <div className="mt-3 border-t border-white/20 pt-2 text-[11px] text-slate-100/80 space-y-1">
-            {template.openingHours && (
-              <p>?? {template.openingHours}</p>
-            )}
-            {template.websiteUrl && (
-              <p>?? {template.websiteUrl}</p>
-            )}
+            {values.openingHours && <p>?? {values.openingHours}</p>}
+            {values.websiteUrl && <p>?? {values.websiteUrl}</p>}
           </div>
         )}
       </div>
