@@ -139,7 +139,10 @@ export function CardTemplatePage() {
   // Nactení existující šablony z backendu pres templateApi
   useEffect(() => {
     async function loadTemplate() {
-      if (!customerId) return;
+      if (!customerId) {
+      setLoading(false);  // at nestrávíš život cekáním
+      return;
+    }
 
       try {
         setLoading(true);
