@@ -17,8 +17,8 @@ type KPI = {
   label: string;
   value: string;
   hint?: string;
-  delta?: string; // "+12%" / "-3%"
-  series?: number[]; // sparkline
+  delta?: string;
+  series?: number[];
   icon: React.ReactNode;
 };
 
@@ -34,7 +34,7 @@ function Sparkline({ series, id }: { series: number[]; id: string }) {
   const h = 40;
   const pad = 4;
 
-  const safe = series.length >= 2 ? series : [0, ...(series ?? [])];
+  const safe = series?.length >= 2 ? series : [0, ...(series ?? [])];
 
   const min = Math.min(...safe);
   const max = Math.max(...safe);
@@ -198,44 +198,49 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
 export function DashboardPage() {
   const { data, loading, error, refresh } = useDashboard();
 
-  const seriesNewCards = data?.series?.newCardsDaily?.map((x) => x.count) ?? [0, 0, 0, 0, 0, 0, 0, 0];
+  // ✅ v2: razítka z eventů
+  const seriesStamps = data?.series?.stampsDaily?.map((x: any) => x.count) ?? new Array(14).fill(0);
+
+  // ✅ držíme i nové karty (v1 card-based)
+  const seriesNewCards =
+    data?.series?.newCardsDaily?.map((x: any) => x.count) ?? new Array(14).fill(0);
 
   const kpis: KPI[] = [
     {
       label: "Aktivní karty",
-      value: loading ? "…" : String(data?.kpis.activeCards ?? 0),
+      value: loading ? "…" : String(data?.kpis?.activeCards ?? 0),
       hint: "všechny karty",
       series: seriesNewCards,
       icon: <CreditCard className="h-5 w-5" />,
     },
     {
-      label: "Nové karty",
-      value: loading ? "…" : String(data?.kpis.newCards7d ?? 0),
-      hint: "posledních 7 dní",
-      series: seriesNewCards,
-      icon: <Users className="h-5 w-5" />,
-    },
-    {
-      label: "Celkem razítek",
-      value: loading ? "…" : String(data?.kpis.totalStamps ?? 0),
-      hint: "stav ze všech karet",
-      series: seriesNewCards,
+      label: "Razítka dnes",
+      value: loading ? "…" : String(data?.kpis?.stampsToday ?? 0),
+      hint: "dnešní den",
+      series: seriesStamps, // ✅ graf razítek
       icon: <ScanLine className="h-5 w-5" />,
     },
     {
-      label: "Celkem odměn",
-      value: loading ? "…" : String(data?.kpis.totalRewards ?? 0),
+      label: "Celkem razítek",
+      value: loading ? "…" : String(data?.kpis?.totalStamps ?? 0),
       hint: "stav ze všech karet",
-      series: seriesNewCards,
-      icon: <Gift className="h-5 w-5" />,
+      series: seriesStamps,
+      icon: <ScanLine className="h-5 w-5" />,
+    },
+    {
+      label: "Nové karty",
+      value: loading ? "…" : String(data?.kpis?.newCards7d ?? 0),
+      hint: "posledních 7 dní",
+      series: seriesNewCards, // ✅ graf nových karet
+      icon: <Users className="h-5 w-5" />,
     },
   ];
 
   const activity: ActivityItem[] =
-    data?.activity?.map((a) => ({
-      type: a.type ?? "card_created",
-      title: a.title,
-      meta: a.meta,
+    data?.activity?.map((a: any) => ({
+      type: a.type ?? "note",
+      title: a.title ?? "Aktivita",
+      meta: a.meta ?? "",
       ts: a.ts,
     })) ?? [];
 
@@ -245,9 +250,7 @@ export function DashboardPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-slate-50">Dashboard</h1>
-            <p className="text-sm text-slate-400">
-              Přehled výkonu věrnostního programu a poslední aktivita.
-            </p>
+            <p className="text-sm text-slate-400">Přehled výkonu a poslední aktivita.</p>
           </div>
 
           <div className="flex gap-2">
@@ -279,7 +282,7 @@ export function DashboardPage() {
           <Card className="lg:col-span-2 bg-slate-950/60 border-slate-800 overflow-hidden">
             <CardHeader>
               <CardTitle>Aktivita</CardTitle>
-              <CardDescription>Zatím bereme poslední vytvořené karty (v2 bude event log).</CardDescription>
+              <CardDescription>Poslední události (event log).</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-3">
@@ -295,13 +298,11 @@ export function DashboardPage() {
                   >
                     <div className="flex items-start gap-3">
                       <ActivityIcon type={a.type} />
-
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <div className="text-sm font-semibold text-slate-50">{a.title}</div>
                           <ActivityTypeChip type={a.type} />
                         </div>
-
                         <div className="flex items-center gap-2 text-xs text-slate-400">
                           <Clock className="h-3.5 w-3.5" />
                           <span>{a.meta}</span>
@@ -310,7 +311,7 @@ export function DashboardPage() {
                     </div>
 
                     <button
-                      className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-900/30 px-3 py-1 hints text-xs text-slate-200 opacity-90 hover:opacity-100"
+                      className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-900/30 px-3 py-1 text-xs text-slate-200 opacity-90 hover:opacity-100"
                       disabled
                       title="Brzy"
                     >
