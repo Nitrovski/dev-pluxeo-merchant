@@ -100,8 +100,11 @@ export function SettingsPage() {
               <CardDescription>Nacteno z onboardingu (/api/me).</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <Field label="Merchant ID" value={me.merchantId} />
-              <Field label="Customer ID" value={me.customerId} />
+              <Field label="Název" value={me.name} />
+    <Field label="ICO" value={me.ico} />
+    <Field label="Telefon" value={me.phone} />
+    <Field label="Adresa" value={me.address} />
+    <Field label="Web" value={me.websiteUrl} />
             </CardContent>
           </Card>
         )}

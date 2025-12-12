@@ -1,8 +1,11 @@
 // src/lib/meCache.ts
+
 export type MeResponse = {
-  merchantId: string;
-  customerId: string;
-  customerName?: string | null;
+  name: string | null;
+  ico: string | null;
+  phone: string | null;
+  address: string | null;
+  websiteUrl: string | null;
 };
 
 let cached: { value: MeResponse; ts: number } | null = null;
