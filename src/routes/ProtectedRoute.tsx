@@ -4,8 +4,22 @@ import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from "@/config";
 import { getMeCache, setMeCache } from "@/lib/meCache";
+import type { MeResponse } from "@/lib/meCache";
 
 type GateState = "checking" | "signin" | "onboarding" | "allow";
+
+function isValidMe(data: any): data is MeResponse {
+  return (
+    data &&
+    typeof data === "object" &&
+    typeof data.onboardingCompleted === "boolean" &&
+    ("name" in data) &&
+    ("ico" in data) &&
+    ("phone" in data) &&
+    ("address" in data) &&
+    ("websiteUrl" in data)
+  );
+}
 
 export function ProtectedRoute() {
   const { isSignedIn, isLoaded, getToken } = useAuth();
@@ -23,7 +37,7 @@ export function ProtectedRoute() {
     async function run() {
       if (!isLoaded) return;
 
-      // neprihlášen ? sign-in
+      // neprihlášen -> sign-in
       if (!isSignedIn) {
         if (!cancelled) setGate("signin");
         return;
@@ -35,14 +49,16 @@ export function ProtectedRoute() {
         return;
       }
 
-      // ? cache hit ? okamžite allow (žádný fetch, žádná prodleva)
+      // cache hit -> rozhodni podle onboardingCompleted
       const cached = getMeCache(60_000);
       if (cached) {
-        if (!cancelled) setGate("allow");
+        if (!cancelled) {
+          setGate(cached.onboardingCompleted ? "allow" : "onboarding");
+        }
         return;
       }
 
-      // cache miss ? jednou zavoláme /api/me
+      // cache miss -> zavolej /api/me
       if (!cancelled) setGate("checking");
 
       const token = await getToken();
@@ -57,47 +73,40 @@ export function ProtectedRoute() {
 
       if (cancelled) return;
 
-      if (res.status === 404) {
-        setGate("onboarding");
+      if (!res.ok) {
+        // pokud 404 = customer ješte neexistuje -> onboarding
+        if (res.status === 404) {
+          setGate("onboarding");
+          return;
+        }
+
+        setGate("signin");
         return;
       }
 
-      if (res.ok) {
-        // uložíme do cache
-try {
-    const data = await res.json();
+      // ok -> parse + validace shape
+      try {
+        const data = await res.json();
 
-    if (
-      data &&
-      typeof data.merchantId === "string" &&
-      typeof data.customerId === "string"
-    ) {
-      setMeCache(data); // ? typove OK
-      setGate("allow");
-      return;
-    }
+        if (!isValidMe(data)) {
+          // backend vrátil neco jiného než cekáme
+          setGate("signin");
+          return;
+        }
 
-    // když backend vrátí neco divného, radši vyžádej onboarding (nebo signin)
-    setGate("onboarding");
-    return;
-  } catch {
-    // když to není JSON, je to chyba backendu
-    setGate("signin");
-    return;
-  }
-}
-      // jiná chyba ? radši sign-in (mužeš udelat i error page)
-      setGate("signin");
+        setMeCache(data);
+        setGate(data.onboardingCompleted ? "allow" : "onboarding");
+        return;
+      } catch (e) {
+        setGate("signin");
+        return;
+      }
     }
 
     run();
-
     return () => {
       cancelled = true;
     };
-
-    // ? NEzávisí na location.pathname ? neprobíhá pri každé navigaci v appce
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, isSignedIn, getToken, isOnboardingRoute]);
 
   if (gate === "checking" || !isLoaded) {
