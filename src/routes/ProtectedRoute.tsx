@@ -1,39 +1,40 @@
+// src/routes/ProtectedRoute.tsx
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import { API_BASE_URL } from "@/config";
 
+type GateState = "checking" | "signin" | "onboarding" | "allow";
+
 export function ProtectedRoute() {
   const { isSignedIn, isLoaded, getToken } = useAuth();
   const location = useLocation();
-
-  const [checking, setChecking] = useState(true);
-  const [allow, setAllow] = useState(false);
-  const [redirectToOnboarding, setRedirectToOnboarding] = useState(false);
+  const [gate, setGate] = useState<GateState>("checking");
 
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
+      // vždy zacínáme "checking"
+      setGate("checking");
+
       if (!isLoaded) return;
 
+      // neprihlášen ? sign-in
       if (!isSignedIn) {
-        setAllow(false);
-        setChecking(false);
+        if (!cancelled) setGate("signin");
         return;
       }
 
-      // ? onboarding je vždy povolen
+      // ? onboarding stránku vždy povolíme (jinak vzniká loop)
       if (location.pathname === "/onboarding") {
-        setAllow(true);
-        setChecking(false);
+        if (!cancelled) setGate("allow");
         return;
       }
 
       const token = await getToken();
       if (!token) {
-        setAllow(false);
-        setChecking(false);
+        if (!cancelled) setGate("signin");
         return;
       }
 
@@ -43,22 +44,20 @@ export function ProtectedRoute() {
 
       if (cancelled) return;
 
-      if (res.ok) {
-        // ? customer existuje ? pustíme dál
-        setRedirectToOnboarding(false);
-        setAllow(true);
-      } else if (res.status === 404) {
-        // ? customer neexistuje ? onboarding
-        setRedirectToOnboarding(true);
-        setAllow(false);
-      } else {
-        setAllow(false);
+      if (res.status === 404) {
+        setGate("onboarding");
+        return;
       }
 
-      setChecking(false);
+      if (res.ok) {
+        setGate("allow");
+        return;
+      }
+
+      // jiná chyba = radši sign-in (nebo mužeš dát error page)
+      setGate("signin");
     }
 
-    setChecking(true);
     run();
 
     return () => {
@@ -66,20 +65,16 @@ export function ProtectedRoute() {
     };
   }, [isLoaded, isSignedIn, getToken, location.pathname]);
 
-  if (!isLoaded || checking) {
+  if (gate === "checking" || !isLoaded) {
     return <div className="p-6 text-slate-400">Nacítám…</div>;
   }
 
-  if (!isSignedIn) {
-    return <Navigate to="/sign-in" replace />;
+  if (gate === "signin") {
+    return <Navigate to="/sign-in" replace state={{ from: location }} />;
   }
 
-  if (redirectToOnboarding && location.pathname !== "/onboarding") {
+  if (gate === "onboarding") {
     return <Navigate to="/onboarding" replace />;
-  }
-
-  if (!allow) {
-    return <Navigate to="/sign-in" replace />;
   }
 
   return <Outlet />;
