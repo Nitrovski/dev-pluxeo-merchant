@@ -1,23 +1,23 @@
 // src/routes/ProtectedRoute.tsx
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { API_BASE_URL } from "@/config";
-import { getMeCache, setMeCache } from "@/lib/meCache";
+import { getMeCache, setMeCache, clearMeCache } from "@/lib/meCache";
 import type { MeResponse } from "@/lib/meCache";
 
-type GateState = "checking" | "signin" | "onboarding" | "allow";
+type GateState = "checking" | "signin" | "allow" | "toOnboarding" | "toDashboard";
 
 function isValidMe(data: any): data is MeResponse {
   return (
     data &&
     typeof data === "object" &&
     typeof data.onboardingCompleted === "boolean" &&
-    ("name" in data) &&
-    ("ico" in data) &&
-    ("phone" in data) &&
-    ("address" in data) &&
-    ("websiteUrl" in data)
+    "name" in data &&
+    "ico" in data &&
+    "phone" in data &&
+    "address" in data &&
+    "websiteUrl" in data
   );
 }
 
@@ -26,39 +26,43 @@ export function ProtectedRoute() {
   const location = useLocation();
   const [gate, setGate] = useState<GateState>("checking");
 
-  const isOnboardingRoute = useMemo(
-    () => location.pathname === "/onboarding",
-    [location.pathname]
-  );
-
   useEffect(() => {
     let cancelled = false;
+
+    async function decide(me: MeResponse) {
+      const isOnboarding = location.pathname === "/onboarding";
+
+      // onboarding není hotový -> všude jinam presmeruj na onboarding
+      if (!me.onboardingCompleted && !isOnboarding) {
+        setGate("toOnboarding");
+        return;
+      }
+
+      // onboarding hotový -> na /onboarding už nepatríš, pošli na dashboard
+      if (me.onboardingCompleted && isOnboarding) {
+        setGate("toDashboard");
+        return;
+      }
+
+      setGate("allow");
+    }
 
     async function run() {
       if (!isLoaded) return;
 
-      // neprihlášen -> sign-in
       if (!isSignedIn) {
         if (!cancelled) setGate("signin");
         return;
       }
 
-      // onboarding stránku vždy povolíme (jinak vzniká loop)
-      if (isOnboardingRoute) {
-        if (!cancelled) setGate("allow");
-        return;
-      }
-
-      // cache hit -> rozhodni podle onboardingCompleted
+      // cache first
       const cached = getMeCache(60_000);
       if (cached) {
-        if (!cancelled) {
-          setGate(cached.onboardingCompleted ? "allow" : "onboarding");
-        }
+        if (!cancelled) await decide(cached);
         return;
       }
 
-      // cache miss -> zavolej /api/me
+      // fetch /api/me
       if (!cancelled) setGate("checking");
 
       const token = await getToken();
@@ -73,33 +77,33 @@ export function ProtectedRoute() {
 
       if (cancelled) return;
 
-      if (!res.ok) {
-        // pokud 404 = customer ješte neexistuje -> onboarding
-        if (res.status === 404) {
-          setGate("onboarding");
-          return;
-        }
+      if (res.status === 404) {
+        // customer neexistuje -> onboarding
+        setGate(location.pathname === "/onboarding" ? "allow" : "toOnboarding");
+        return;
+      }
 
+      if (!res.ok) {
+        // chyba -> radši znovu login
+        clearMeCache();
         setGate("signin");
         return;
       }
 
-      // ok -> parse + validace shape
       try {
         const data = await res.json();
 
         if (!isValidMe(data)) {
-          // backend vrátil neco jiného než cekáme
+          clearMeCache();
           setGate("signin");
           return;
         }
 
         setMeCache(data);
-        setGate(data.onboardingCompleted ? "allow" : "onboarding");
-        return;
-      } catch (e) {
+        await decide(data);
+      } catch {
+        clearMeCache();
         setGate("signin");
-        return;
       }
     }
 
@@ -107,7 +111,7 @@ export function ProtectedRoute() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn, getToken, isOnboardingRoute]);
+  }, [isLoaded, isSignedIn, getToken, location.pathname]);
 
   if (gate === "checking" || !isLoaded) {
     return <div className="p-6 text-slate-400">Nacítám…</div>;
@@ -117,8 +121,12 @@ export function ProtectedRoute() {
     return <Navigate to="/sign-in" replace state={{ from: location }} />;
   }
 
-  if (gate === "onboarding") {
+  if (gate === "toOnboarding") {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  if (gate === "toDashboard") {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;
