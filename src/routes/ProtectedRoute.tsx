@@ -64,16 +64,28 @@ export function ProtectedRoute() {
 
       if (res.ok) {
         // uložíme do cache
-        try {
-          const data = await res.json();
-          setMeCache(data || {});
-        } catch {
-          setMeCache({});
-        }
-        setGate("allow");
-        return;
-      }
+try {
+    const data = await res.json();
 
+    if (
+      data &&
+      typeof data.merchantId === "string" &&
+      typeof data.customerId === "string"
+    ) {
+      setMeCache(data); // ? typove OK
+      setGate("allow");
+      return;
+    }
+
+    // když backend vrátí neco divného, radši vyžádej onboarding (nebo signin)
+    setGate("onboarding");
+    return;
+  } catch {
+    // když to není JSON, je to chyba backendu
+    setGate("signin");
+    return;
+  }
+}
       // jiná chyba ? radši sign-in (mužeš udelat i error page)
       setGate("signin");
     }
