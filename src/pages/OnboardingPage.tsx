@@ -15,38 +15,48 @@ export function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
+  e.preventDefault();
+  setSaving(true);
+  setError(null);
 
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Missing token");
+  try {
+    const token = await getToken();
+    if (!token) throw new Error("Missing token");
 
-      const res = await fetch(`${API_BASE_URL}/api/onboarding`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: user?.primaryEmailAddress?.emailAddress ?? null,
-        }),
-      });
+    const res = await fetch(`${API_BASE_URL}/api/onboarding`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: name.trim(),
+        email: user?.primaryEmailAddress?.emailAddress ?? null,
+      }),
+    });
 
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || `HTTP ${res.status}`);
-      }
+    const text = await res.text();
+    console.log("[Onboarding] status:", res.status, "body:", text);
 
-      navigate("/dashboard", { replace: true });
-    } catch (e: any) {
-      setError(e?.message ?? "Onboarding failed");
-    } finally {
-      setSaving(false);
+    if (!res.ok) {
+      throw new Error(text || `HTTP ${res.status}`);
     }
+
+    // ? jistota: po onboardingu hned over /api/me
+    const meRes = await fetch(`${API_BASE_URL}/api/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("[Onboarding] /api/me after onboarding:", meRes.status);
+
+    navigate("/dashboard", { replace: true });
+  } catch (e: any) {
+    console.error("[Onboarding] submit error:", e);
+    setError(e?.message ?? "Onboarding failed");
+  } finally {
+    setSaving(false);
   }
+}
+
 
   return (
     <AppShell>
