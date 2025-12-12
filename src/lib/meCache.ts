@@ -6,6 +6,7 @@ export type MeResponse = {
   phone: string | null;
   address: string | null;
   websiteUrl: string | null;
+  onboardingCompleted: boolean;
 };
 
 let cached: { value: MeResponse; ts: number } | null = null;
