@@ -6,6 +6,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
+import { setMeCache } from "@/lib/meCache";
+
 export function OnboardingPage() {
   const { getToken } = useAuth();
   const { user } = useUser();
@@ -45,12 +47,19 @@ export function OnboardingPage() {
         body: JSON.stringify(payload),
       });
 
-      const text = await res.text();
+      // ?? nacti odpoved jako JSON (lepší než res.text())
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error(text || `HTTP ${res.status}`);
+        const msg =
+          typeof data === "string"
+            ? data
+            : data?.message || data?.error || `HTTP ${res.status}`;
+        throw new Error(msg);
       }
 
-      // hotovo ? dashboard
+      // ? ulož me do cache a presmeruj
+      setMeCache(data);
       navigate("/dashboard", { replace: true });
     } catch (e: any) {
       console.error("[Onboarding] submit error:", e);

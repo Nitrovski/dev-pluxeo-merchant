@@ -1,8 +1,9 @@
 // src/routes/ProtectedRoute.tsx
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from "@/config";
+import { getMeCache, setMeCache } from "@/lib/meCache";
 
 type GateState = "checking" | "signin" | "onboarding" | "allow";
 
@@ -11,13 +12,15 @@ export function ProtectedRoute() {
   const location = useLocation();
   const [gate, setGate] = useState<GateState>("checking");
 
+  const isOnboardingRoute = useMemo(
+    () => location.pathname === "/onboarding",
+    [location.pathname]
+  );
+
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
-      // vždy zacínáme "checking"
-      setGate("checking");
-
       if (!isLoaded) return;
 
       // neprihlášen ? sign-in
@@ -26,11 +29,21 @@ export function ProtectedRoute() {
         return;
       }
 
-      // ? onboarding stránku vždy povolíme (jinak vzniká loop)
-      if (location.pathname === "/onboarding") {
+      // onboarding stránku vždy povolíme (jinak vzniká loop)
+      if (isOnboardingRoute) {
         if (!cancelled) setGate("allow");
         return;
       }
+
+      // ? cache hit ? okamžite allow (žádný fetch, žádná prodleva)
+      const cached = getMeCache(60_000);
+      if (cached) {
+        if (!cancelled) setGate("allow");
+        return;
+      }
+
+      // cache miss ? jednou zavoláme /api/me
+      if (!cancelled) setGate("checking");
 
       const token = await getToken();
       if (!token) {
@@ -50,11 +63,18 @@ export function ProtectedRoute() {
       }
 
       if (res.ok) {
+        // uložíme do cache
+        try {
+          const data = await res.json();
+          setMeCache(data || {});
+        } catch {
+          setMeCache({});
+        }
         setGate("allow");
         return;
       }
 
-      // jiná chyba = radši sign-in (nebo mužeš dát error page)
+      // jiná chyba ? radši sign-in (mužeš udelat i error page)
       setGate("signin");
     }
 
@@ -63,7 +83,10 @@ export function ProtectedRoute() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn, getToken, location.pathname]);
+
+    // ? NEzávisí na location.pathname ? neprobíhá pri každé navigaci v appce
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, isSignedIn, getToken, isOnboardingRoute]);
 
   if (gate === "checking" || !isLoaded) {
     return <div className="p-6 text-slate-400">Nacítám…</div>;
