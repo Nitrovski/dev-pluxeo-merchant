@@ -5,13 +5,13 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/config";
 import { getMeCache, setMeCache } from "@/lib/meCache";
-import type { MeResponse } from "@/lib/meCache"; // pokud MeResponse exportujeö odtud; jinak uprav import
+import type { MeResponse } from "@/lib/meCache"; // pokud MeResponse exportuje≈° odtud; jinak uprav import
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="space-y-1">
       <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="text-base font-medium">{value ?? "ó"}</div>
+      <div className="text-base font-medium">{value ?? "‚Äî"}</div>
     </div>
   );
 }
@@ -45,7 +45,7 @@ export function SettingsPage() {
       setMe(data);
     } catch (e: any) {
       console.error("[SettingsPage] loadMe failed:", e);
-      setError(e?.message ?? "Nepodarilo se nacÌst profil.");
+      setError(e?.message ?? "Nepodarilo se nac√≠st profil.");
     } finally {
       setLoading(false);
     }
@@ -61,13 +61,13 @@ export function SettingsPage() {
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">NastavenÌ podniku</h1>
+            <h1 className="text-2xl font-semibold">Nastaven√≠ podniku</h1>
             <p className="text-sm text-muted-foreground">
-              ZatÌm jen n·hled hodnot nastaven˝ch pri onboardingu.
+              Zat√≠m jen n√°hled hodnot nastaven√Ωch pri onboardingu.
             </p>
           </div>
 
-          <Button variant="secondary" disabled title="Prid·me pozdeji">
+          <Button variant="secondary" disabled title="Prid√°me pozdeji">
             Upravit
           </Button>
         </div>
@@ -75,8 +75,8 @@ export function SettingsPage() {
         {loading && (
           <Card>
             <CardHeader>
-              <CardTitle>NacÌt·m profilÖ</CardTitle>
-              <CardDescription>Chvilku vydrû.</CardDescription>
+              <CardTitle>Nac√≠t√°m profil‚Ä¶</CardTitle>
+              <CardDescription>Chvilku vydr≈æ.</CardDescription>
             </CardHeader>
           </Card>
         )}
@@ -84,7 +84,7 @@ export function SettingsPage() {
         {!loading && error && (
           <Card>
             <CardHeader>
-              <CardTitle>Profil se nepodarilo nacÌst</CardTitle>
+              <CardTitle>Profil se nepodarilo nac√≠st</CardTitle>
               <CardDescription className="break-words">{error}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -94,19 +94,23 @@ export function SettingsPage() {
         )}
 
         {!loading && !error && me && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Identita</CardTitle>
-              <CardDescription>Nacteno z onboardingu (/api/me).</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <Field label="N·zev" value={me.name} />
-    <Field label="ICO" value={me.ico} />
+        <Card>
+  <CardHeader>
+    <CardTitle>Profil podniku</CardTitle>
+    <CardDescription>
+      √ödaje nastaven√© p≈ôi onboardingu.
+    </CardDescription>
+  </CardHeader>
+
+  <CardContent className="grid gap-4 sm:grid-cols-2">
+    <Field label="N√°zev podniku" value={me.name} />
+    <Field label="IƒåO" value={me.ico} />
     <Field label="Telefon" value={me.phone} />
     <Field label="Adresa" value={me.address} />
     <Field label="Web" value={me.websiteUrl} />
-            </CardContent>
-          </Card>
+  </CardContent>
+</Card>
+
         )}
       </div>
     </AppShell>
