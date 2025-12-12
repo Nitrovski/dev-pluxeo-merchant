@@ -5,7 +5,7 @@ export function SignInPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-950">
       <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl">
         <h1 className="mb-4 text-center text-xl font-semibold text-slate-50">
-          Prihl·öenÌ obchodnÌka
+          Prihl√°≈°en√≠ obchodn√≠ka
         </h1>
         <SignIn
           appearance={{

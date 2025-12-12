@@ -8,19 +8,19 @@ export function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Moje karty</CardTitle>
-            <CardDescription>Spravujte vernostní karty pro své zákazníky.</CardDescription>
+            <CardDescription>Spravujte vernostnÃ­ karty pro svÃ© zÃ¡kaznÃ­ky.</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-slate-300">
-              Tady brzy uvidíš souhrn: pocet aktivních karet, pocet razítek, poslední scany…
+              Tady brzy uvidÃ­Å¡ souhrn: pocet aktivnÃ­ch karet, pocet razÃ­tek, poslednÃ­ scanyâ€¦
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Scan mód</CardTitle>
+            <CardTitle>Scan mÃ³d</CardTitle>
             <CardDescription>
-              Pripravíme nástroj pro rychlé pridání razítek pres kameru nebo ctecku.
+              PripravÃ­me nÃ¡stroj pro rychlÃ© pridÃ¡nÃ­ razÃ­tek pres kameru nebo ctecku.
             </CardDescription>
           </CardHeader>
         </Card>

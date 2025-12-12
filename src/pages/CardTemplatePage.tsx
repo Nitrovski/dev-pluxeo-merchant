@@ -35,83 +35,83 @@ import {
 const TEMPLATE_VARIANTS = [
   {
     key: "classic",
-    label: "Klasick·",
-    description: "Jednoduch˝ cist˝ vzhled s barvou znacky.",
+    label: "Klasick√°",
+    description: "Jednoduch√Ω cist√Ω vzhled s barvou znacky.",
   },
   {
     key: "stamps",
-    label: "RazÌtkov·",
-    description: "Design, kter˝ zduraznuje pocet nasbÌran˝ch razÌtek.",
+    label: "Raz√≠tkov√°",
+    description: "Design, kter√Ω zduraznuje pocet nasb√≠ran√Ωch raz√≠tek.",
   },
   {
     key: "minimal",
-    label: "Minimalistick·",
-    description: "Hodne cist˝, textove orientovan˝ vzhled.",
+    label: "Minimalistick√°",
+    description: "Hodne cist√Ω, textove orientovan√Ω vzhled.",
   },
 ] as const;
 
-// --- ZOD SCH…MA ---
+// --- ZOD SCH√âMA ---
 
 export const templateSchema = z.object({
   programName: z
     .string()
-    .max(100, "Maxim·lne 100 znaku")
+    .max(100, "Maxim√°lne 100 znaku")
     .optional(),
 
   headline: z
     .string()
-    .min(1, "Nadpis je povinn˝")
-    .max(120, "Maxim·lne 120 znaku"),
+    .min(1, "Nadpis je povinn√Ω")
+    .max(120, "Maxim√°lne 120 znaku"),
 
   subheadline: z
     .string()
-    .max(160, "Maxim·lne 160 znaku")
+    .max(160, "Maxim√°lne 160 znaku")
     .optional(),
 
   customMessage: z
     .string()
-    .max(500, "Maxim·lne 500 znaku")
+    .max(500, "Maxim√°lne 500 znaku")
     .optional(),
 
   openingHours: z
     .string()
-    .max(120, "Maxim·lne 120 znaku")
+    .max(120, "Maxim√°lne 120 znaku")
     .optional(),
 
   websiteUrl: z
-    .union([z.string().url("MusÌ b˝t platn· URL"), z.literal("")])
+    .union([z.string().url("Mus√≠ b√Ωt platn√° URL"), z.literal("")])
     .optional(),
 
   freeStampsToReward: z.coerce
     .number()
-    .int("MusÌ b˝t celÈ cÌslo")
-    .min(1, "Minim·lne 1 razÌtko")
-    .max(50, "Maxim·lne 50 razÌtek"),
+    .int("Mus√≠ b√Ωt cel√© c√≠slo")
+    .min(1, "Minim√°lne 1 raz√≠tko")
+    .max(50, "Maxim√°lne 50 raz√≠tek"),
 
   themeVariant: z.enum(["classic", "stamps", "minimal"]),
 
   primaryColor: z
     .string()
-    .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve form·tu #RRGGBB"),
+    .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve form√°tu #RRGGBB"),
 
   secondaryColor: z
     .string()
-    .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve form·tu #RRGGBB"),
+    .regex(/^#([0-9A-Fa-f]{6})$/, "Zadej HEX barvu ve form√°tu #RRGGBB"),
 
   logoUrl: z
-    .union([z.string().url("MusÌ b˝t platn· URL"), z.literal("")])
+    .union([z.string().url("Mus√≠ b√Ωt platn√° URL"), z.literal("")])
     .optional(),
 });
 
-// typ formul·re
+// typ formul√°re
 export type TemplateFormValues = z.input<typeof templateSchema>;
 
-// --- DEFAULTNÕ HODNOTY ---
+// --- DEFAULTN√ç HODNOTY ---
 
 const DEFAULT_VALUES: TemplateFormValues = {
   programName: "",
-  headline: "SbÌrej razÌtka a zÌskej k·vu zdarma",
-  subheadline: "Pluxeo Coffee ñ tvoje oblÌben· kav·rna",
+  headline: "Sb√≠rej raz√≠tka a z√≠skej k√°vu zdarma",
+  subheadline: "Pluxeo Coffee ‚Äì tvoje obl√≠ben√° kav√°rna",
   customMessage: "",
   openingHours: "",
   websiteUrl: "",
@@ -136,11 +136,11 @@ export function CardTemplatePage() {
 
    const customerId = useCustomer();
    
-  // NactenÌ existujÌcÌ öablony z backendu pres templateApi
+  // Nacten√≠ existuj√≠c√≠ ≈°ablony z backendu pres templateApi
   useEffect(() => {
     async function loadTemplate() {
       if (!customerId) {
-      setLoading(false);  // at nestr·vÌö ûivot cek·nÌm
+      setLoading(false);  // at nestr√°v√≠≈° ≈æivot cek√°n√≠m
       return;
     }
 
@@ -159,8 +159,8 @@ export function CardTemplatePage() {
         }
 
       } catch (err: any) {
-        console.error("Chyba pri nacÌt·nÌ öablony:", err);
-        setServerError(err?.message || "Nelze nacÌst öablonu.");
+        console.error("Chyba pri nac√≠t√°n√≠ ≈°ablony:", err);
+        setServerError(err?.message || "Nelze nac√≠st ≈°ablonu.");
       } finally {
         setLoading(false);
       }
@@ -177,7 +177,7 @@ async function onSubmit(values: TemplateFormValues) {
     setServerSuccess(null);
 
     if (!customerId) {
-      setServerError("ChybÌ customerId ñ zkuste obnovit str·nku nebo se znovu prihl·sit.");
+      setServerError("Chyb√≠ customerId ‚Äì zkuste obnovit str√°nku nebo se znovu prihl√°sit.");
       return;
     }
 
@@ -185,11 +185,11 @@ async function onSubmit(values: TemplateFormValues) {
     const saved = await saveCardTemplate(customerId as string, values, token ?? undefined);
 
     form.reset({ ...values, ...saved });
-    setServerSuccess("äablona byla ˙speöne uloûena.");
+    setServerSuccess("≈†ablona byla √∫spe≈°ne ulo≈æena.");
   } catch (err: any) {
-    console.error("Chyba pri ukl·d·nÌ öablony:", err);
+    console.error("Chyba pri ukl√°d√°n√≠ ≈°ablony:", err);
     setServerError(
-      err?.message ?? "Neco se pokazilo pri ukl·d·nÌ öablony."
+      err?.message ?? "Neco se pokazilo pri ukl√°d√°n√≠ ≈°ablony."
     );
   }
 }
@@ -199,26 +199,26 @@ async function onSubmit(values: TemplateFormValues) {
   return (
     <AppShell>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">äablona vernostnÌ karty</h1>
+        <h1 className="text-2xl font-semibold">≈†ablona vernostn√≠ karty</h1>
         <p className="text-sm text-slate-400">
-          Nastav, jak budou vypadat a fungovat karty pro tvoje z·kaznÌky. Tato
-          öablona se pouûije pro vöechny novÈ karty i verejnÈ zobrazenÌ.
+          Nastav, jak budou vypadat a fungovat karty pro tvoje z√°kazn√≠ky. Tato
+          ≈°ablona se pou≈æije pro v≈°echny nov√© karty i verejn√© zobrazen√≠.
         </p>
       </div>
 
       {loading && (
-        <p className="text-sm text-slate-400">NacÌt·m öablonuÖ</p>
+        <p className="text-sm text-slate-400">Nac√≠t√°m ≈°ablonu‚Ä¶</p>
       )}
 
       {!loading && (
         <div className="grid gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          {/* Formul·r vlevo */}
+          {/* Formul√°r vlevo */}
           <Card className="bg-slate-900 border-slate-800">
             <CardHeader>
-              <CardTitle>NastavenÌ obsahu a pravidel</CardTitle>
+              <CardTitle>Nastaven√≠ obsahu a pravidel</CardTitle>
               <CardDescription>
-                Texty, pravidla programu a vzhled karty. UloûenÌ se projevÌ
-                vöude, kde se karta zobrazuje.
+                Texty, pravidla programu a vzhled karty. Ulo≈æen√≠ se projev√≠
+                v≈°ude, kde se karta zobrazuje.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -237,10 +237,10 @@ async function onSubmit(values: TemplateFormValues) {
                       name="programName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>InternÌ n·zev programu</FormLabel>
+                          <FormLabel>Intern√≠ n√°zev programu</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="napr. K·va zdarma po 10 razÌtk·ch"
+                              placeholder="napr. K√°va zdarma po 10 raz√≠tk√°ch"
                               {...field}
                             />
                           </FormControl>
@@ -257,7 +257,7 @@ async function onSubmit(values: TemplateFormValues) {
                           <FormLabel>Nadpis na karte</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="napr. SbÌrej razÌtka a zÌskej k·vu zdarma"
+                              placeholder="napr. Sb√≠rej raz√≠tka a z√≠skej k√°vu zdarma"
                               {...field}
                             />
                           </FormControl>
@@ -274,7 +274,7 @@ async function onSubmit(values: TemplateFormValues) {
                           <FormLabel>Podnadpis</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="napr. Pluxeo Coffee ñ Vodickova"
+                              placeholder="napr. Pluxeo Coffee ‚Äì Vodickova"
                               {...field}
                             />
                           </FormControl>
@@ -288,10 +288,10 @@ async function onSubmit(values: TemplateFormValues) {
                       name="customMessage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Text pro z·kaznÌka</FormLabel>
+                          <FormLabel>Text pro z√°kazn√≠ka</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Kr·tkÈ vysvetlenÌ podmÌnek, omezenÌ, atd."
+                              placeholder="Kr√°tk√© vysvetlen√≠ podm√≠nek, omezen√≠, atd."
                               rows={3}
                               {...field}
                             />
@@ -305,7 +305,7 @@ async function onSubmit(values: TemplateFormValues) {
                   {/* Sekce: Pravidla */}
                   <div className="space-y-3">
                     <h2 className="text-sm font-semibold text-slate-100">
-                      Pravidla vernostnÌho programu
+                      Pravidla vernostn√≠ho programu
                     </h2>
 
                     <FormField
@@ -313,7 +313,7 @@ async function onSubmit(values: TemplateFormValues) {
                       name="freeStampsToReward"
                       render={({ field }) => (
                         <FormItem className="max-w-[160px]">
-                          <FormLabel>Pocet razÌtek na odmenu</FormLabel>
+                          <FormLabel>Pocet raz√≠tek na odmenu</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -340,10 +340,10 @@ async function onSubmit(values: TemplateFormValues) {
                         name="openingHours"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>OtevÌracÌ doba (volitelnÈ)</FormLabel>
+                            <FormLabel>Otev√≠rac√≠ doba (voliteln√©)</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="napr. PoñP· 8:00ñ18:00"
+                                placeholder="napr. Po‚ÄìP√° 8:00‚Äì18:00"
                                 {...field}
                               />
                             </FormControl>
@@ -357,9 +357,9 @@ async function onSubmit(values: TemplateFormValues) {
                         name="websiteUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Web / odkaz (volitelnÈ)</FormLabel>
+                            <FormLabel>Web / odkaz (voliteln√©)</FormLabel>
                             <FormControl>
-                              <Input placeholder="https://Ö" {...field} />
+                              <Input placeholder="https://‚Ä¶" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -368,10 +368,10 @@ async function onSubmit(values: TemplateFormValues) {
                     </div>
                   </div>
 
-                  {/* Sekce: Typ öablony */}
+                  {/* Sekce: Typ ≈°ablony */}
                   <div className="space-y-3">
                     <h2 className="text-sm font-semibold text-slate-100">
-                      Typ öablony
+                      Typ ≈°ablony
                     </h2>
                     <FormField
                       control={form.control}
@@ -423,7 +423,7 @@ async function onSubmit(values: TemplateFormValues) {
                         name="primaryColor"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Prim·rnÌ barva</FormLabel>
+                            <FormLabel>Prim√°rn√≠ barva</FormLabel>
                             <div className="mt-1 flex items-center gap-2">
                               <FormControl>
                                 <div className="flex items-center gap-2">
@@ -449,7 +449,7 @@ async function onSubmit(values: TemplateFormValues) {
                         name="secondaryColor"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Sekund·rnÌ barva</FormLabel>
+                            <FormLabel>Sekund√°rn√≠ barva</FormLabel>
                             <div className="mt-1 flex items-center gap-2">
                               <FormControl>
                                 <div className="flex items-center gap-2">
@@ -475,9 +475,9 @@ async function onSubmit(values: TemplateFormValues) {
                         name="logoUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Logo URL (zatÌm jen URL)</FormLabel>
+                            <FormLabel>Logo URL (zat√≠m jen URL)</FormLabel>
                             <FormControl>
-                              <Input placeholder="https://Ö" {...field} />
+                              <Input placeholder="https://‚Ä¶" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -486,7 +486,7 @@ async function onSubmit(values: TemplateFormValues) {
                     </div>
                   </div>
 
-                  {/* Glob·lnÌ hl·öky */}
+                  {/* Glob√°ln√≠ hl√°≈°ky */}
                   {serverError && (
                     <p className="text-sm text-red-400 whitespace-pre-wrap">
                       {serverError}
@@ -503,19 +503,19 @@ async function onSubmit(values: TemplateFormValues) {
                     size="sm"
                     disabled={form.formState.isSubmitting}
                   >
-                    {form.formState.isSubmitting ? "Ukl·d·mÖ" : "Uloûit öablonu"}
+                    {form.formState.isSubmitting ? "Ukl√°d√°m‚Ä¶" : "Ulo≈æit ≈°ablonu"}
                   </Button>
                 </form>
               </Form>
             </CardContent>
           </Card>
 
-          {/* N·hled vpravo */}
+          {/* N√°hled vpravo */}
           <Card className="bg-slate-900 border-slate-800">
             <CardHeader>
-              <CardTitle>N·hled karty</CardTitle>
+              <CardTitle>N√°hled karty</CardTitle>
               <CardDescription>
-                Pribliûn˝ vzhled, jak se karta zobrazÌ z·kaznÌkum (v aplikaci /
+                Pribli≈æn√Ω vzhled, jak se karta zobraz√≠ z√°kazn√≠kum (v aplikaci /
                 Wallet).
               </CardDescription>
             </CardHeader>
@@ -549,10 +549,10 @@ function TemplatePreview({ values }: { values: TemplateFormValues }) {
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex flex-col">
             <span className="text-xs uppercase tracking-wide text-slate-200/80">
-              {values.programName || "VernostnÌ program"}
+              {values.programName || "Vernostn√≠ program"}
             </span>
             <span className="text-lg font-semibold">
-              {values.headline || "SbÌrej razÌtka a zÌskej odmenu"}
+              {values.headline || "Sb√≠rej raz√≠tka a z√≠skej odmenu"}
             </span>
           </div>
           {values.logoUrl ? (
@@ -576,7 +576,7 @@ function TemplatePreview({ values }: { values: TemplateFormValues }) {
 
         <div className="mb-3 mt-3">
           <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-100/80">
-            RazÌtka do odmeny
+            Raz√≠tka do odmeny
           </p>
           <div className="flex gap-1">
             {(() => {

@@ -47,7 +47,7 @@ export function OnboardingPage() {
         body: JSON.stringify(payload),
       });
 
-      // ?? nacti odpoved jako JSON (lepöÌ neû res.text())
+      // ?? nacti odpoved jako JSON (lep≈°√≠ ne≈æ res.text())
       const data = await res.json();
 
       if (!res.ok) {
@@ -58,7 +58,7 @@ export function OnboardingPage() {
         throw new Error(msg);
       }
 
-      // ? uloû me do cache a presmeruj
+      // ? ulo≈æ me do cache a presmeruj
       setMeCache(data);
       navigate("/dashboard", { replace: true });
     } catch (e: any) {
@@ -76,24 +76,24 @@ export function OnboardingPage() {
       <div className="mx-auto max-w-2xl">
         <Card>
           <CardHeader>
-            <CardTitle>NastavenÌ podniku</CardTitle>
+            <CardTitle>Nastaven√≠ podniku</CardTitle>
             <CardDescription>
-              Jeöte potrebujeme p·r ˙daju, at muûeö zacÌt vytv·ret vernostnÌ program.
+              Je≈°te potrebujeme p√°r √∫daju, at mu≈æe≈° zac√≠t vytv√°ret vernostn√≠ program.
             </CardDescription>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
-              {/* N·zev podniku */}
+              {/* N√°zev podniku */}
               <div className="space-y-1">
                 <label className="text-sm text-slate-300">
-                  N·zev podniku <span className="text-red-400">*</span>
+                  N√°zev podniku <span className="text-red-400">*</span>
                 </label>
                 <input
                   className="w-full rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-slate-50 outline-none focus:border-slate-600"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Napr. K·va u Tom·öe"
+                  placeholder="Napr. K√°va u Tom√°≈°e"
                   autoFocus
                 />
               </div>
@@ -101,7 +101,7 @@ export function OnboardingPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 {/* Telefon */}
                 <div className="space-y-1">
-                  <label className="text-sm text-slate-300">Telefon (volitelnÈ)</label>
+                  <label className="text-sm text-slate-300">Telefon (voliteln√©)</label>
                   <input
                     className="w-full rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-slate-50 outline-none focus:border-slate-600"
                     value={phone}
@@ -113,7 +113,7 @@ export function OnboardingPage() {
 
                 {/* ICO */}
                 <div className="space-y-1">
-                  <label className="text-sm text-slate-300">ICO (volitelnÈ)</label>
+                  <label className="text-sm text-slate-300">ICO (voliteln√©)</label>
                   <input
                     className="w-full rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-slate-50 outline-none focus:border-slate-600"
                     value={ico}
@@ -126,7 +126,7 @@ export function OnboardingPage() {
 
               {/* Adresa */}
               <div className="space-y-1">
-                <label className="text-sm text-slate-300">Adresa (volitelnÈ)</label>
+                <label className="text-sm text-slate-300">Adresa (voliteln√©)</label>
                 <input
                   className="w-full rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-slate-50 outline-none focus:border-slate-600"
                   value={address}
@@ -143,7 +143,7 @@ export function OnboardingPage() {
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <Button type="submit" disabled={!canSubmit || saving}>
-                  {saving ? "Ukl·d·mÖ" : "Pokracovat"}
+                  {saving ? "Ukl√°d√°m‚Ä¶" : "Pokracovat"}
                 </Button>
               </div>
             </form>

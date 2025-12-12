@@ -31,7 +31,7 @@ export function CardsPage() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // ?? NactenÌ karet pro prihl·öenÈho merchanta
+  // ?? Nacten√≠ karet pro prihl√°≈°en√©ho merchanta
   useEffect(() => {
     async function loadCards() {
       try {
@@ -39,7 +39,7 @@ export function CardsPage() {
         setError(null);
 
         if (!API_BASE_URL) {
-          throw new Error("ChybÌ konfigurace API_BASE_URL");
+          throw new Error("Chyb√≠ konfigurace API_BASE_URL");
         }
 
         const token = await getToken();
@@ -58,8 +58,8 @@ export function CardsPage() {
         const data = await res.json();
         setCards(data);
       } catch (err: any) {
-        console.error("Chyba pri nacÌt·nÌ karet:", err);
-        setError(err?.message ?? "Neco se pokazilo pri nacÌt·nÌ karet.");
+        console.error("Chyba pri nac√≠t√°n√≠ karet:", err);
+        setError(err?.message ?? "Neco se pokazilo pri nac√≠t√°n√≠ karet.");
       } finally {
         setLoading(false);
       }
@@ -68,14 +68,14 @@ export function CardsPage() {
     loadCards();
   }, [getToken]);
 
-  // ?? JednoduchÈ vytvorenÌ testovacÌ karty pro prihl·öenÈho merchanta
+  // ?? Jednoduch√© vytvoren√≠ testovac√≠ karty pro prihl√°≈°en√©ho merchanta
   async function handleCreateTestCard() {
     try {
       setCreating(true);
       setError(null);
 
       if (!API_BASE_URL) {
-        throw new Error("ChybÌ konfigurace API_BASE_URL");
+        throw new Error("Chyb√≠ konfigurace API_BASE_URL");
       }
 
       const token = await getToken();
@@ -87,8 +87,8 @@ export function CardsPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          headline: "TestovacÌ karta",
-          subheadline: "PrvnÌ karta pro tohoto merchanta",
+          headline: "Testovac√≠ karta",
+          subheadline: "Prvn√≠ karta pro tohoto merchanta",
           themeColor: "#FF9900",
           stamps: 0,
           rewards: 0,
@@ -97,16 +97,16 @@ export function CardsPage() {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`API error: ${res.status} ñ ${text}`);
+        throw new Error(`API error: ${res.status} ‚Äì ${text}`);
       }
 
       const newCard: MerchantCard = await res.json();
 
-      // Prid·me novou kartu do seznamu (bez dalöÌho GET)
+      // Prid√°me novou kartu do seznamu (bez dal≈°√≠ho GET)
       setCards((prev) => [...prev, newCard]);
     } catch (err: any) {
-      console.error("Chyba pri vytv·renÌ karty:", err);
-      setError(err?.message ?? "Neco se pokazilo pri vytv·renÌ karty.");
+      console.error("Chyba pri vytv√°ren√≠ karty:", err);
+      setError(err?.message ?? "Neco se pokazilo pri vytv√°ren√≠ karty.");
     } finally {
       setCreating(false);
     }
@@ -118,15 +118,15 @@ export function CardsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Moje karty</h1>
           <p className="text-sm text-slate-400">
-            Vytv·rej a spravuj vernostnÌ karty pro svÈ z·kaznÌky.
+            Vytv√°rej a spravuj vernostn√≠ karty pro sv√© z√°kazn√≠ky.
           </p>
         </div>
         <Button size="sm" onClick={handleCreateTestCard} disabled={creating}>
-          {creating ? "Vytv·rÌm..." : "Vytvorit testovacÌ kartu"}
+          {creating ? "Vytv√°r√≠m..." : "Vytvorit testovac√≠ kartu"}
         </Button>
       </div>
 
-      {loading && <p className="text-sm text-slate-400">NacÌt·m kartyÖ</p>}
+      {loading && <p className="text-sm text-slate-400">Nac√≠t√°m karty‚Ä¶</p>}
 
       {error && !loading && (
         <p className="text-sm text-red-400 whitespace-pre-wrap">{error}</p>
@@ -134,8 +134,8 @@ export function CardsPage() {
 
       {!loading && !error && cards.length === 0 && (
         <p className="text-sm text-slate-400">
-          ZatÌm nem·ö û·dnÈ karty. Klikni na ÑVytvorit testovacÌ kartuì a zaloû
-          prvnÌ.
+          Zat√≠m nem√°≈° ≈æ√°dn√© karty. Klikni na ‚ÄûVytvorit testovac√≠ kartu‚Äú a zalo≈æ
+          prvn√≠.
         </p>
       )}
 
@@ -143,7 +143,7 @@ export function CardsPage() {
         {cards.map((card) => (
           <Card key={card._id}>
             <CardHeader>
-              <CardTitle>{card.headline || "Bez n·zvu"}</CardTitle>
+              <CardTitle>{card.headline || "Bez n√°zvu"}</CardTitle>
               {card.subheadline && (
                 <CardDescription>{card.subheadline}</CardDescription>
               )}
@@ -156,12 +156,12 @@ export function CardsPage() {
                 </span>
               </p>
               <p className="mt-1 text-xs text-slate-400">
-                RazÌtka: {card.stamps ?? 0} ∑ Odmeny: {card.rewards ?? 0}
+                Raz√≠tka: {card.stamps ?? 0} ¬∑ Odmeny: {card.rewards ?? 0}
               </p>
             </CardContent>
             <CardFooter>
               <Button variant="outline" size="sm">
-                QR kÛd
+                QR k√≥d
               </Button>
               <Button variant="ghost" size="sm">
                 Detail
