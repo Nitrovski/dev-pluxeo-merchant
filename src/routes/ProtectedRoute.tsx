@@ -1,4 +1,3 @@
-// src/routes/ProtectedRoute.tsx
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
@@ -9,27 +8,32 @@ export function ProtectedRoute() {
   const location = useLocation();
 
   const [checking, setChecking] = useState(true);
-  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [allow, setAllow] = useState(false);
+  const [redirectToOnboarding, setRedirectToOnboarding] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function checkMe() {
+    async function run() {
       if (!isLoaded) return;
+
       if (!isSignedIn) {
-        if (!cancelled) setChecking(false);
+        setAllow(false);
+        setChecking(false);
         return;
       }
 
-      // `/onboarding` nechceme blokovat
+      // ? onboarding je vždy povolen
       if (location.pathname === "/onboarding") {
-        if (!cancelled) setChecking(false);
+        setAllow(true);
+        setChecking(false);
         return;
       }
 
       const token = await getToken();
       if (!token) {
-        if (!cancelled) setChecking(false);
+        setAllow(false);
+        setChecking(false);
         return;
       }
 
@@ -39,16 +43,23 @@ export function ProtectedRoute() {
 
       if (cancelled) return;
 
-      if (res.status === 404) {
-        setNeedsOnboarding(true);
+      if (res.ok) {
+        // ? customer existuje ? pustíme dál
+        setRedirectToOnboarding(false);
+        setAllow(true);
+      } else if (res.status === 404) {
+        // ? customer neexistuje ? onboarding
+        setRedirectToOnboarding(true);
+        setAllow(false);
       } else {
-        setNeedsOnboarding(false);
+        setAllow(false);
       }
 
       setChecking(false);
     }
 
-    checkMe();
+    setChecking(true);
+    run();
 
     return () => {
       cancelled = true;
@@ -60,12 +71,16 @@ export function ProtectedRoute() {
   }
 
   if (!isSignedIn) {
-    return <Navigate to="/sign-in" replace state={{ from: location }} />;
+    return <Navigate to="/sign-in" replace />;
   }
 
-if (needsOnboarding && location.pathname !== "/onboarding") {
-  return <Navigate to="/onboarding" replace />;
-}
+  if (redirectToOnboarding && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (!allow) {
+    return <Navigate to="/sign-in" replace />;
+  }
 
   return <Outlet />;
 }
