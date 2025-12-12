@@ -109,26 +109,32 @@ function StatCard({ kpi, sparkId }: { kpi: KPI; sparkId: string }) {
           </div>
         )}
 
-        <div className="relative space-y-1 pr-28">
-          <div className="text-sm text-slate-400">{kpi.label}</div>
-          <div className="text-2xl font-semibold text-slate-50">{kpi.value}</div>
+        <div className="relative space-y-2 pr-36 pb-10">
+  <div className="text-sm text-slate-400">{kpi.label}</div>
+  <div className="text-2xl font-semibold text-slate-50">{kpi.value}</div>
 
-          <div className="flex items-center gap-2 pt-1">
-            {kpi.delta && (
-              <span
-                className={[
-                  "inline-flex items-center rounded-full border px-2 py-0.5 text-xs",
-                  isPositive ? "border-emerald-500/30 text-emerald-300 bg-emerald-500/10" : "",
-                  isNegative ? "border-red-500/30 text-red-300 bg-red-500/10" : "",
-                  !isPositive && !isNegative ? "border-slate-700 text-slate-200 bg-slate-800/40" : "",
-                ].join(" ")}
-              >
-                {kpi.delta}
-              </span>
-            )}
-            {kpi.hint && <span className="text-xs text-slate-400">{kpi.hint}</span>}
-          </div>
-        </div>
+  <div className="flex items-center gap-2 pt-1">
+    {kpi.delta && (
+      <span
+        className={[
+          "inline-flex items-center rounded-full border px-2 py-0.5 text-xs",
+          isPositive ? "border-emerald-500/30 text-emerald-300 bg-emerald-500/10" : "",
+          isNegative ? "border-red-500/30 text-red-300 bg-red-500/10" : "",
+          !isPositive && !isNegative ? "border-slate-700 text-slate-200 bg-slate-800/40" : "",
+        ].join(" ")}
+      >
+        {kpi.delta}
+      </span>
+    )}
+
+    {kpi.hint && (
+      <span className="inline-flex items-center rounded-full border border-slate-800 bg-slate-900/35 px-2 py-0.5 text-xs text-slate-300">
+        {kpi.hint}
+      </span>
+    )}
+  </div>
+</div>
+
       </CardContent>
     </Card>
   );
