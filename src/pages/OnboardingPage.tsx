@@ -1,4 +1,3 @@
-// src/pages/OnboardingPage.tsx
 import { useState } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
@@ -31,7 +30,7 @@ export function OnboardingPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name,
+          name: name.trim(),
           email: user?.primaryEmailAddress?.emailAddress ?? null,
         }),
       });
@@ -54,7 +53,7 @@ export function OnboardingPage() {
       <div className="max-w-lg">
         <h1 className="text-2xl font-semibold">Nastavení podniku</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Ješte potrebujeme název podniku, aby šlo vytvorit vernostní program.
+          Zadej název podniku, aby šlo dokoncit nastavení úctu.
         </p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-3">
@@ -64,7 +63,7 @@ export function OnboardingPage() {
               className="mt-1 w-full rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-slate-50"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Napr. Pluxeo Coffee"
+              placeholder="Napr. Káva u Tomáše"
             />
           </div>
 
