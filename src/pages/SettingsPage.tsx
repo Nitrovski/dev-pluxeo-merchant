@@ -1,6 +1,11 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { getMeCache } from "@/lib/meCache";
+import { Button } from "@/components/ui/button";
+import { API_BASE_URL } from "@/config";
+import { getMeCache, setMeCache } from "@/lib/meCache";
+import type { MeResponse } from "@/lib/meCache"; // pokud MeResponse exportuješ odtud; jinak uprav import
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -12,59 +17,94 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 }
 
 export function SettingsPage() {
-  const me = getMeCache();
+  const { getToken } = useAuth();
 
-  if (!me) {
-    return (
-      <AppShell>
-        <div className="max-w-3xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Nastavení podniku</CardTitle>
-              <CardDescription>
-                Profil není nactený (meCache je prázdná). Otevri onboarding nebo se znovu prihlas.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </AppShell>
-    );
+  const [me, setMe] = useState<MeResponse | null>(() => getMeCache());
+  const [loading, setLoading] = useState(!me);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadMe() {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/api/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`API /api/me failed (${res.status}): ${text}`);
+      }
+
+      const data: MeResponse = await res.json();
+      setMeCache(data);
+      setMe(data);
+    } catch (e: any) {
+      console.error("[SettingsPage] loadMe failed:", e);
+      setError(e?.message ?? "Nepodarilo se nacíst profil.");
+    } finally {
+      setLoading(false);
+    }
   }
+
+  useEffect(() => {
+    if (!me) loadMe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <AppShell>
       <div className="max-w-3xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Nastavení podniku</h1>
-          <p className="text-sm text-muted-foreground">
-            Zatím jen náhled hodnot nastavených pri onboardingu.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">Nastavení podniku</h1>
+            <p className="text-sm text-muted-foreground">
+              Zatím jen náhled hodnot nastavených pri onboardingu.
+            </p>
+          </div>
+
+          <Button variant="secondary" disabled title="Pridáme pozdeji">
+            Upravit
+          </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Identita</CardTitle>
-            <CardDescription>
-              Toto ted máme v `MeResponse`.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <Field label="Merchant ID" value={me.merchantId} />
-            <Field label="Customer ID" value={me.customerId} />
-          </CardContent>
-        </Card>
+        {loading && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Nacítám profil…</CardTitle>
+              <CardDescription>Chvilku vydrž.</CardDescription>
+            </CardHeader>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Kontaktní údaje</CardTitle>
-            <CardDescription>
-              Pridáme pozdeji (až bude v API / onboardingu: název, telefon, web, adresa).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Zatím není co zobrazit.
-          </CardContent>
-        </Card>
+        {!loading && error && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Profil se nepodarilo nacíst</CardTitle>
+              <CardDescription className="break-words">{error}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={loadMe}>Zkusit znovu</Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {!loading && !error && me && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Identita</CardTitle>
+              <CardDescription>Nacteno z onboardingu (/api/me).</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <Field label="Merchant ID" value={me.merchantId} />
+              <Field label="Customer ID" value={me.customerId} />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppShell>
   );
