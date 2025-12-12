@@ -5,12 +5,13 @@ import { API_BASE_URL } from "@/config";
 const FALLBACK_CUSTOMER_ID = import.meta.env.VITE_CUSTOMER_ID || undefined;
 
 export function useCustomer() {
-  const { getToken, isLoaded } = useAuth();
-  const { user, isLoaded: isUserLoaded, isSignedIn } = useUser();
+  const { getToken, isLoaded: authLoaded } = useAuth();
+  const { isSignedIn, isLoaded: userLoaded, user } = useUser();
   const [customerId, setCustomerId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoaded || !isUserLoaded) return;
+    if (!authLoaded || !userLoaded) return;
+
     if (!isSignedIn) {
       setCustomerId(null);
       return;
@@ -18,10 +19,18 @@ export function useCustomer() {
 
     let cancelled = false;
 
-    async function loadCustomer() {
-      const token = await getToken();
+    async function ensureCustomerWithRetry() {
+      // zkusíme token párkrát, protože po loginu nekdy chvíli trvá než je session ready
+      let token: string | null = null;
+      for (let i = 0; i < 6; i++) {
+        token = await getToken();
+        if (token) break;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+
       if (!token) {
-        console.warn("[useCustomer] Missing Clerk token even though signed in");
+        console.warn("[useCustomer] Token not ready after retry");
+        if (FALLBACK_CUSTOMER_ID && !cancelled) setCustomerId(FALLBACK_CUSTOMER_ID);
         return;
       }
 
@@ -32,20 +41,17 @@ export function useCustomer() {
 
       if (meRes.ok) {
         const data = await meRes.json();
+        console.log("[useCustomer] /api/me response:", data);
         if (!cancelled && typeof data?.customerId === "string") {
           setCustomerId(data.customerId);
         }
         return;
       }
 
-      // 401 = token/auth problém, ne fallback
-      if (meRes.status === 401) {
-        console.warn("[useCustomer] /api/me unauthorized (401)");
-        return;
-      }
-
-      // 404 = nemáš customer v DB => vytvor ho pres ensure
+      // 2) pokud 404 -> zavolej ensure
       if (meRes.status === 404) {
+        console.log("[useCustomer] /api/me 404 => calling /api/customers/ensure");
+
         const ensureRes = await fetch(`${API_BASE_URL}/api/customers/ensure`, {
           method: "POST",
           headers: {
@@ -58,31 +64,29 @@ export function useCustomer() {
           }),
         });
 
+        const txt = await ensureRes.text();
+        console.log("[useCustomer] ensure status:", ensureRes.status, "body:", txt);
+
         if (ensureRes.ok) {
-          const ensured = await ensureRes.json();
+          const ensured = JSON.parse(txt);
           if (!cancelled && typeof ensured?.customerId === "string") {
             setCustomerId(ensured.customerId);
           }
           return;
         }
-
-        console.warn("[useCustomer] ensure failed:", ensureRes.status, await ensureRes.text());
-        // volitelne fallback pro dev
-        if (!cancelled && FALLBACK_CUSTOMER_ID) setCustomerId(FALLBACK_CUSTOMER_ID);
-        return;
       }
 
-      // jiné chyby
-      console.warn("[useCustomer] /api/me failed:", meRes.status, await meRes.text());
-      if (!cancelled && FALLBACK_CUSTOMER_ID) setCustomerId(FALLBACK_CUSTOMER_ID);
+      // 3) ostatní chyby
+      console.warn("[useCustomer] /api/me failed:", meRes.status, meRes.statusText);
+      if (FALLBACK_CUSTOMER_ID && !cancelled) setCustomerId(FALLBACK_CUSTOMER_ID);
     }
 
-    loadCustomer();
+    ensureCustomerWithRetry();
 
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isUserLoaded, isSignedIn, getToken, user]);
+  }, [authLoaded, userLoaded, isSignedIn, getToken, user]);
 
   return customerId;
 }
