@@ -1,20 +1,16 @@
 import { Link, NavLink } from "react-router-dom";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
-import { useCustomer } from "@/hooks/useCustomer"; // ?? PRIDÁNO
+import { useCustomer } from "@/hooks/useCustomer";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   // ?? BOOTSTRAP CUSTOMER
-  const customerId = useCustomer();
-
-  // (volitelné – pro debug mužeš odkomentovat)
-  // console.log("[AppShell] customerId:", customerId);
+  useCustomer();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-
           {/* Logo / Brand */}
           <Link to="/dashboard" className="text-lg font-semibold">
             Pluxeo Merchant
@@ -37,7 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 isActive ? "text-slate-50" : "text-slate-400 hover:text-slate-100"
               }
             >
-              Moje karty
+              My cards
             </NavLink>
 
             <NavLink
@@ -46,7 +42,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 isActive ? "text-slate-50" : "text-slate-400 hover:text-slate-100"
               }
             >
-              Šablona karty
+              Card Template
+            </NavLink>
+
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                isActive ? "text-slate-50" : "text-slate-400 hover:text-slate-100"
+              }
+            >
+              Settings
             </NavLink>
           </nav>
 
@@ -55,16 +60,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SignedIn>
               <UserButton
                 afterSignOutUrl="/sign-in"
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8",
-                  },
-                }}
+                appearance={{ elements: { avatarBox: "w-8 h-8" } }}
               />
             </SignedIn>
 
             <SignedOut>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" asChild>
                 <Link to="/sign-in">Login</Link>
               </Button>
             </SignedOut>
@@ -72,9 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        {children}
-      </main>
+      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
     </div>
   );
 }

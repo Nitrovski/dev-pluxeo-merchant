@@ -3,10 +3,9 @@ import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { SignInPage } from "@/pages/SignInPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { CardsPage } from "@/pages/CardsPage";
-import { OnboardingPage } from "@/pages/OnboardingPage"; // pridat
-
-// ?? Pridejme nový import:
+import { OnboardingPage } from "@/pages/OnboardingPage";
 import { CardTemplatePage } from "@/pages/CardTemplatePage";
+import { SettingsPage } from "@/pages/SettingsPage"; // ? NOVÉ
 
 export default function App() {
   return (
@@ -17,10 +16,9 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/cards" element={<CardsPage />} />
-        {/* ?? Nová route – Onboarding cast  */}
-        <Route path="/onboarding" element={<OnboardingPage />} /> 
-        {/* ?? Nová route – Šablona vernostní karty */}
+        <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/card-template" element={<CardTemplatePage />} />
+        <Route path="/settings" element={<SettingsPage />} /> {/* ? NOVÉ */}
 
         {/* default redirect */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
