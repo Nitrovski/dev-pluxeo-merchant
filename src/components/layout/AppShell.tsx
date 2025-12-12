@@ -1,8 +1,15 @@
 import { Link, NavLink } from "react-router-dom";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
+import { useCustomer } from "@/hooks/useCustomer"; // ?? PRIDÁNO
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  // ?? BOOTSTRAP CUSTOMER
+  const customerId = useCustomer();
+
+  // (volitelné – pro debug mužeš odkomentovat)
+  // console.log("[AppShell] customerId:", customerId);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
@@ -32,8 +39,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               Moje karty
             </NavLink>
-            
-             <NavLink
+
+            <NavLink
               to="/card-template"
               className={({ isActive }) =>
                 isActive ? "text-slate-50" : "text-slate-400 hover:text-slate-100"
@@ -41,32 +48,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               Šablona karty
             </NavLink>
-            
           </nav>
 
-          {/* User menu (logout, manage account) */}
+          {/* User menu */}
           <div className="flex items-center gap-3">
-
-            {/* Pokud je uživatel prihlášený ? zobrazíme user menu */}
             <SignedIn>
-              <UserButton 
+              <UserButton
                 afterSignOutUrl="/sign-in"
                 appearance={{
                   elements: {
-                    // zmenší avatar aby víc sedel do UI
                     avatarBox: "w-8 h-8",
                   },
                 }}
               />
             </SignedIn>
 
-            {/* Pokud není prihlášen ? zobrazíme login button */}
             <SignedOut>
-               <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm">
                 <Link to="/sign-in">Login</Link>
               </Button>
             </SignedOut>
-
           </div>
         </div>
       </header>
