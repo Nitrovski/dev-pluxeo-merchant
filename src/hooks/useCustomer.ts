@@ -5,10 +5,14 @@ import { API_BASE_URL } from "@/config";
 export function useCustomer() {
   const { getToken, isLoaded: authLoaded } = useAuth();
   const { isSignedIn, isLoaded: userLoaded, user } = useUser();
+
   const [customerId, setCustomerId] = useState<string | null>(null);
+
   console.log("[useCustomer] hook render");
+
   useEffect(() => {
-  console.log("[useCustomer] effect fired", { authLoaded, userLoaded, isSignedIn }); 
+    console.log("[useCustomer] effect fired", { authLoaded, userLoaded, isSignedIn });
+
     if (!authLoaded || !userLoaded) return;
     if (!isSignedIn) {
       setCustomerId(null);
@@ -17,30 +21,42 @@ export function useCustomer() {
 
     let cancelled = false;
 
-    async function run() {
-      // token retry (po loginu bývá chvíli null)
+    (async () => {
+      // token retry – po loginu muže chvíli trvat
       let token: string | null = null;
       for (let i = 0; i < 6; i++) {
         token = await getToken();
         if (token) break;
         await new Promise((r) => setTimeout(r, 300));
       }
-      if (!token) return;
+      if (!token) {
+        console.warn("[useCustomer] token not ready");
+        return;
+      }
 
-      const meRes = await fetch(`${API_BASE_URL}/api/me`, {
+      const meUrl = `${API_BASE_URL}/api/me`;
+      console.log("[useCustomer] GET", meUrl);
+
+      const meRes = await fetch(meUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (meRes.ok) {
         const data = await meRes.json();
+        console.log("[useCustomer] /api/me ok:", data);
         if (!cancelled && typeof data?.customerId === "string") {
           setCustomerId(data.customerId);
         }
         return;
       }
 
+      console.warn("[useCustomer] /api/me failed:", meRes.status);
+
       if (meRes.status === 404) {
-        const ensureRes = await fetch(`${API_BASE_URL}/api/customers/ensure`, {
+        const ensureUrl = `${API_BASE_URL}/api/customers/ensure`;
+        console.log("[useCustomer] POST", ensureUrl);
+
+        const ensureRes = await fetch(ensureUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -52,16 +68,19 @@ export function useCustomer() {
           }),
         });
 
+        const txt = await ensureRes.text();
+        console.log("[useCustomer] ensure response:", ensureRes.status, txt);
+
         if (ensureRes.ok) {
-          const ensured = await ensureRes.json();
+          const ensured = JSON.parse(txt);
           if (!cancelled && typeof ensured?.customerId === "string") {
             setCustomerId(ensured.customerId);
           }
+          return;
         }
       }
-    }
+    })();
 
-    run();
     return () => {
       cancelled = true;
     };
