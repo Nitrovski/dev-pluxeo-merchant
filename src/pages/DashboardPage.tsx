@@ -1,7 +1,11 @@
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useAuth } from "@clerk/clerk-react";
+import { API_BASE_URL } from "@/config";
+import QRCode from "qrcode";
 import {
   CreditCard,
   ScanLine,
@@ -362,6 +366,61 @@ function ActivitySkeleton() {
 
 export function DashboardPage() {
   const { data, loading, error, refresh } = useDashboard();
+  const { getToken } = useAuth();
+
+  // ✅ Enrollment QR state (nové)
+  const [enrollUrl, setEnrollUrl] = useState<string>("");
+  const [enrollQr, setEnrollQr] = useState<string>("");
+  const [enrollLoading, setEnrollLoading] = useState<boolean>(true);
+  const [enrollError, setEnrollError] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEnrollmentQr() {
+      setEnrollLoading(true);
+      setEnrollError("");
+
+      try {
+        const token = await getToken();
+        if (!token) {
+          setEnrollError("Chybí přihlášení (token).");
+          setEnrollLoading(false);
+          return;
+        }
+
+        const res = await fetch(`${API_BASE_URL}/api/merchant/enrollment`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(json?.error || "Nepodařilo se načíst enrollment QR.");
+        }
+
+        const url = json?.enrollment?.url;
+        if (!url || typeof url !== "string") {
+          throw new Error("API vrátilo neplatný enrollment.url.");
+        }
+
+        const png = await QRCode.toDataURL(url, { width: 240, margin: 2 });
+
+        if (!cancelled) {
+          setEnrollUrl(url);
+          setEnrollQr(png);
+        }
+      } catch (e: any) {
+        if (!cancelled) setEnrollError(e?.message || "Chyba při načítání QR.");
+      } finally {
+        if (!cancelled) setEnrollLoading(false);
+      }
+    }
+
+    loadEnrollmentQr();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken]);
 
   // Event-based
   const stampsDaily = data?.series?.stampsDaily?.map((x: any) => x.count) ?? new Array(14).fill(0);
@@ -407,6 +466,15 @@ export function DashboardPage() {
       meta: a.meta ?? "",
       ts: a.ts,
     })) ?? [];
+
+  async function copyEnrollUrl() {
+    if (!enrollUrl) return;
+    try {
+      await navigator.clipboard.writeText(enrollUrl);
+    } catch {
+      // fallback: nic, případně si později doplníme toast
+    }
+  }
 
   return (
     <AppShell>
@@ -551,11 +619,61 @@ export function DashboardPage() {
 
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/25 p-4">
                   <div className="text-sm font-semibold text-slate-50">Vytiskni QR pro zákazníky</div>
-                  <div className="text-xs text-slate-400">QR → přidání karty do Walletu.</div>
-                  <div className="mt-3">
-                    <Button variant="secondary" size="sm" disabled title="Brzy">
-                      Generovat QR
-                    </Button>
+                  <div className="text-xs text-slate-400">
+                    Zákazník naskenuje QR a otevře se mu stránka pro přidání karty.
+                  </div>
+
+                  <div className="mt-3 flex items-start gap-4">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-3">
+                      {enrollLoading ? (
+                        <div className="h-[240px] w-[240px] rounded-xl bg-slate-900/40" />
+                      ) : enrollQr ? (
+                        <img
+                          src={enrollQr}
+                          alt="Enrollment QR"
+                          className="h-[240px] w-[240px] rounded-xl"
+                        />
+                      ) : (
+                        <div className="h-[240px] w-[240px] rounded-xl bg-slate-900/40 flex items-center justify-center text-xs text-slate-400">
+                          QR není k dispozici
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      {enrollError ? (
+                        <div className="text-xs text-red-300">{enrollError}</div>
+                      ) : (
+                        <>
+                          <div className="text-xs text-slate-400">URL:</div>
+                          <div className="break-all rounded-xl border border-slate-800 bg-slate-900/25 px-3 py-2 text-xs text-slate-200">
+                            {enrollUrl || "—"}
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={copyEnrollUrl}
+                          disabled={!enrollUrl}
+                          title={!enrollUrl ? "URL není načtené" : "Zkopíruje odkaz do schránky"}
+                        >
+                          Kopírovat link
+                        </Button>
+
+                        <Button asChild variant="secondary" size="sm" disabled={!enrollUrl}>
+                          <a href={enrollUrl || "#"} target="_blank" rel="noreferrer">
+                            Otevřít
+                          </a>
+                        </Button>
+                      </div>
+
+                      <div className="text-[11px] text-slate-500">
+                        Tip: Vytiskni QR a dej ho k pokladně / na stůl. (Wallet integraci doplníme později.)
+                      </div>
+                    </div>
                   </div>
                 </div>
 
